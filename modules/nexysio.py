@@ -2,7 +2,7 @@
 """
 Created on Fri Jun 25 16:10:45 2021
 
-@author: nicolas
+@author: Nicolas Striebig
 
 """
 import ftd2xx as ftd
@@ -51,7 +51,7 @@ class nexysio:
         if clkdiv < 1:
             clkdiv = 1
 
-        return bytes([value]*clkdiv)
+        return bytearray([value]*clkdiv)
 
     def __setup(self):
         """Set FTDI setting with int value from 0 to 63"""
@@ -103,7 +103,7 @@ class nexysio:
         print("Header: {}".format(header.hex()))
         print("Data ({} Bits): {}\n".format(len(value), value.bin))
 
-        bit, data = 0, bytes()
+        bit, data = 0, bytearray()
 
         # data
         for bit in value:
@@ -114,26 +114,25 @@ class nexysio:
                 pattern = 0
 
             # Generate double clocked pattern
-            b"".join([data, self.__AddBytes(pattern, clkdiv)])
-            b"".join([data, self.__AddBytes(pattern | 1, clkdiv)])
-            b"".join([data, self.__AddBytes(pattern, clkdiv)])
+            data.extend(self.__AddBytes(pattern, clkdiv))
+            data.extend(self.__AddBytes(pattern | 1, clkdiv))
+            data.extend(self.__AddBytes(pattern, clkdiv))
 
         # Load signal
-        b"".join([data, self.__AddBytes(LD_GECCO, clkdiv)])
-        b"".join([data, self.__AddBytes(0x00, clkdiv)])
+        data.extend(self.__AddBytes(LD_GECCO, clkdiv))
+        data.extend(self.__AddBytes(0x00, clkdiv))
 
         i = 0
         while i < 8:
-            b"".join([data, self.__AddBytes(0x01, clkdiv)])
-            b"".join([data, self.__AddBytes(0x00, clkdiv)])
+            data.extend(self.__AddBytes(0x01, clkdiv))
+            data.extend(self.__AddBytes(0x00, clkdiv))
             i += 1
 
-        b"".join([data, self.__AddBytes(LD_GECCO, clkdiv)])
-        b"".join([data, self.__AddBytes(0x00, clkdiv)])
+        data.extend(self.__AddBytes(LD_GECCO, clkdiv))
+        data.extend(self.__AddBytes(0x00, clkdiv))
 
-        # concencate header+dataasic
-
-        return header+data
+        # concatenate header+dataasic
+        return b"".join([header,data])
     
     def writeSRasic(self, value: bytes, sendload: bool, clkdiv=16) -> bytes:
         """Write to ASIC SR"""
@@ -151,7 +150,7 @@ class nexysio:
         print("Header: {}".format(header.hex()))
         print("Data ({} Bits): {}\n".format(len(value), value.bin))
 
-        bit, data = 0, bytes()
+        bit, data = 0, bytearray()
 
         # data
         for bit in value:
@@ -162,18 +161,25 @@ class nexysio:
                 pattern = 0
 
             # Generate double clocked pattern
-            b"".join([data,self.__AddBytes(pattern, clkdiv)])
-            b"".join([data,self.__AddBytes(pattern | 1, clkdiv)])
-            b"".join([data,self.__AddBytes(pattern, clkdiv)])
-            b"".join([data,self.__AddBytes(pattern | 2, clkdiv)])
-            b"".join([data,self.__AddBytes(pattern, clkdiv)])
+            #b"".join([data,self.__AddBytes(pattern, clkdiv)])
+            #b"".join([data,self.__AddBytes(pattern | 1, clkdiv)])
+            #b"".join([data,self.__AddBytes(pattern, clkdiv)])
+            #b"".join([data,self.__AddBytes(pattern | 2, clkdiv)])
+            #b"".join([data,self.__AddBytes(pattern, clkdiv)])
+            data.extend(self.__AddBytes(pattern, clkdiv))
+            data.extend(self.__AddBytes(pattern | 1, clkdiv))
+            data.extend(self.__AddBytes(pattern, clkdiv))
+            data.extend(self.__AddBytes(pattern | 2, clkdiv))
+            data.extend(self.__AddBytes(pattern, clkdiv))
 
         # Load signal
         if sendload:
-            b"".join([data,self.__AddBytes(0x00, 10*clkdiv)])
-            b"".join([data,self.__AddBytes(LD_ASIC, 10*clkdiv)])
-            b"".join([data,self.__AddBytes(0x00, 10*clkdiv)])
+            #b"".join([data,self.__AddBytes(0x00, 10*clkdiv)])
+            #b"".join([data,self.__AddBytes(LD_ASIC, 10*clkdiv)])
+            #b"".join([data,self.__AddBytes(0x00, 10*clkdiv)])
+            data.extend(self.__AddBytes(0x00, 10*clkdiv))
+            data.extend(self.__AddBytes(LD_ASIC, 10*clkdiv))
+            data.extend(self.__AddBytes(0x00, 10*clkdiv))
 
-        # concencate header+data
-
-        return header+data
+        # concatenate header+data
+        return b"".join([header,data])

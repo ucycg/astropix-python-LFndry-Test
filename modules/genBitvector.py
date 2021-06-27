@@ -2,7 +2,7 @@
 """
 Created on Fri Jun 25 16:28:27 2021
 
-@author: nicolas
+@author: Nicolas Striebig
 """
 from bitstring import BitArray
 
@@ -61,7 +61,7 @@ class genBitvector:
             'nu26': 0,
             'nu27': 0,
             'nu28': 0,
-            'vncomp': 0,
+            'vncomp': 63,
             'nu30': 0,
             'nu31': 0,
             'nu32': 0,
@@ -79,7 +79,7 @@ class genBitvector:
             
     
     
-    def asicbitvector(self):
+    def asicVector(self, MSBfirst=False):
     
         bitvector = BitArray()
     
@@ -91,10 +91,14 @@ class genBitvector:
     
         for dac, value in self.dacs.items():
             bitvector.append(self.__inttobitvector_6b(value))
+            
+        if MSBfirst:
+            return bitvector
+        else:
+            bitvector.reverse()
+            return bitvector
     
-        return bitvector
-    
-    def configVB(self, pos: int, dacs: list):
+    def vbVector(self, pos: int, dacs: list):
     
         vdacbits=BitArray()
         vdac = 0
@@ -112,3 +116,6 @@ class genBitvector:
         vdacbits.append(BitArray(uint=(1 << pos), length=8))
     
         return vdacbits
+    
+    def injVector(self):
+        pass
