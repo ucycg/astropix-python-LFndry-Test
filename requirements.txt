@@ -1,0 +1,2 @@
+ftd2xx==1.2.0b4
+bitstring==3.1.7
