@@ -2,7 +2,7 @@
 
 Python based lightweight cross platform tool for controlling the GECCO System.
 
-To interact with the FTDI-Chip the ftd2xx package is used, which provides a wrapper around the D2XX driver.
+To interact with the FTDI-Chip the ftd2xx package is used, which provides a wrapper around the proprietary D2XX driver.
 For Bitmanipulation the Bitstring package is used.
 
 Features:
@@ -15,6 +15,8 @@ TODO:
 * SPI
 
 ### Linux
+Install D2XX driver: [Installation Guide](https://ftdichip.com/wp-content/uploads/2020/08/AN_220_FTDI_Drivers_Installation_Guide_for_Linux-1.pdf)
+
 Check if VCP driver gets loaded:
     
     sudo lsmod | grep -a "ftdi_sio"

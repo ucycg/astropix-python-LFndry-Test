@@ -6,22 +6,23 @@ Created on Fri Jun 25 16:28:27 2021
 """
 from bitstring import BitArray
 
+
 class genBitvector:
     def __init__(self):
 
         self.digitalconfig = {'interrupt_pushpull': 0,
-                         'ResetB Biasblock': 0}
-        
+                              'ResetB Biasblock': 0}
+
         i = 1
         while i < 19:
             self.digitalconfig[f'En_Inj{i}'] = 0
             i += 1
-        
+
         i = 0
         while i < 15:
             self.digitalconfig[f'Extrabit{i}'] = 0
             i += 1
-        
+
         self.biasconfig = {
             'q00': 0,
             'q01': 0,
@@ -30,7 +31,7 @@ class genBitvector:
             'qon2': 0,
             'qon3': 1,
         }
-        
+
         self.dacs = {
             'blres': 5,
             'nu1': 0,
@@ -68,54 +69,51 @@ class genBitvector:
             'nu33': 0,
         }
 
-
     def __inttobitvector_6b(self, value: int):
-         
+
         try:
             return BitArray(uint=value, length=6)
         except:
-            raise TypeError("Allowed Dacvalues 0 - 63") 
-    
-            
-    
-    
-    def asicVector(self, MSBfirst=False):
-    
+            raise TypeError("Allowed Dacvalues 0 - 63")
+
+    def asicVector(self, MSBfirst=False) -> BitArray:
+
         bitvector = BitArray()
-    
+
         for dac, value in self.digitalconfig.items():
             bitvector.append(BitArray(uint=value, length=1))
-    
+
         for dac, value in self.biasconfig.items():
             bitvector.append(BitArray(uint=value, length=1))
-    
+
         for dac, value in self.dacs.items():
             bitvector.append(self.__inttobitvector_6b(value))
-            
+
         if MSBfirst:
             return bitvector
         else:
             bitvector.reverse()
             return bitvector
-    
-    def vbVector(self, pos: int, dacs: list):
-    
-        vdacbits=BitArray()
+
+    def vbVector(self, pos: int, dacs: list) -> BitArray:
+
+        vdacbits = BitArray()
         vdac = 0
-        
+        dacs.reverse()
         for vdac in dacs:
             if vdac > 1.8:
-                print("\u001b[31mDAC on VB pos{} {}V exceeds 1.8V\n-> Set to 0V \u001b[0m".format(pos, vdac))
+                print(
+                    "\u001b[31mDAC on VB pos{} {}V exceeds 1.8V\n-> Set to 0V \u001b[0m".format(pos, vdac))
                 vdac = 0
-    
-            dacvalue=int(vdac*16383/3.3)
-            
+
+            dacvalue = int(vdac*16383/3.3)
+
             vdacbits.append(BitArray(uint=dacvalue, length=14))
             vdacbits.append(BitArray(uint=0, length=2))
-    
-        vdacbits.append(BitArray(uint=(1 << pos), length=8))
-    
+
+        vdacbits.append(BitArray(uint=(0b10000000 >> (pos-1)), length=8))
+
         return vdacbits
-    
+
     def injVector(self):
         pass

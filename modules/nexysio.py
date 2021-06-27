@@ -161,11 +161,6 @@ class nexysio:
                 pattern = 0
 
             # Generate double clocked pattern
-            #b"".join([data,self.__AddBytes(pattern, clkdiv)])
-            #b"".join([data,self.__AddBytes(pattern | 1, clkdiv)])
-            #b"".join([data,self.__AddBytes(pattern, clkdiv)])
-            #b"".join([data,self.__AddBytes(pattern | 2, clkdiv)])
-            #b"".join([data,self.__AddBytes(pattern, clkdiv)])
             data.extend(self.__AddBytes(pattern, clkdiv))
             data.extend(self.__AddBytes(pattern | 1, clkdiv))
             data.extend(self.__AddBytes(pattern, clkdiv))
@@ -174,9 +169,6 @@ class nexysio:
 
         # Load signal
         if sendload:
-            #b"".join([data,self.__AddBytes(0x00, 10*clkdiv)])
-            #b"".join([data,self.__AddBytes(LD_ASIC, 10*clkdiv)])
-            #b"".join([data,self.__AddBytes(0x00, 10*clkdiv)])
             data.extend(self.__AddBytes(0x00, 10*clkdiv))
             data.extend(self.__AddBytes(LD_ASIC, 10*clkdiv))
             data.extend(self.__AddBytes(0x00, 10*clkdiv))
