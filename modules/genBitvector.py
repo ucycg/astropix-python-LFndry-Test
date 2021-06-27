@@ -5,9 +5,8 @@ Created on Fri Jun 25 16:28:27 2021
 @author: nicolas
 """
 from bitstring import BitArray
-from nexysio import nexysio
 
-class genBitvector(nexysio):
+class genBitvector:
     def __init__(self):
 
         self.digitalconfig = {'interrupt_pushpull': 0,
@@ -92,8 +91,6 @@ class genBitvector(nexysio):
     
         for dac, value in self.dacs.items():
             bitvector.append(self.__inttobitvector_6b(value))
-    
-        print("Asicconfig({} bit): {}".format(len(bitvector), bitvector.bin))
     
         return bitvector
     

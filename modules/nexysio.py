@@ -20,6 +20,8 @@ LD_GECCO = 0x04
 
 
 class nexysio:
+    
+    testvar = 1
 
     def openDevice(self, number: int):
         
