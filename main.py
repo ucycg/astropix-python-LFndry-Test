@@ -7,28 +7,8 @@ Created on Sat Jun 26 00:10:56 2021
 
 from bitstring import BitArray
 
-from nexysio import nexysio
+#from nexysio import nexysio
 from genBitvector import genBitvector
-
-#import os
-
-def configVB(pos: int, dacs: list):
-    
-    vdacbits=BitArray()
-    vdac = 0
-    for vdac in dacs:
-        if vdac > 1.8:
-            print("\u001b[31mDAC on VB pos{} {}V exceeds 1.8V\n-> Set to 0V \u001b[0m".format(pos, vdac))
-            vdac = 0
-
-        dacvalue=int(vdac*16383/3.3)
-        
-        vdacbits.append(BitArray(uint=dacvalue, length=14))
-        vdacbits.append(BitArray(uint=0, length=2))
-
-    vdacbits.append(BitArray(uint=(1 << pos), length=8))
-
-    return vdacbits
 
 
 nexys = genBitvector()
