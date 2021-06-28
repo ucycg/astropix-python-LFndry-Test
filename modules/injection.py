@@ -20,7 +20,7 @@ class injection(nexysio):
         self.cycle = 0
         self.clkdiv = 0
         self.initdelay = 0
-        self.pulsesperset = 1
+        self.pulsesperset = 0
 
     def __patgenReset(self, reset: bool):
         return super(injection, self).writeRegister(PG_RESET, reset)
@@ -28,25 +28,50 @@ class injection(nexysio):
     def __patgenSuspend(self, suspend: bool):
         return super(injection, self).writeRegister(PG_SUSPEND, suspend)
 
-    def patgenPeriod(self, period: int):
+    @property
+    def period(self):
+        return self._period
+
+    @period.setter
+    def period(self, period: int):
         if 0 <= period <= 255:
-            self.period = period
+            self._period = period
 
-    def patgenCycle(self, cycle: int):
+    @property
+    def cycle(self):
+        return self._cycle
+
+    @cycle.setter
+    def cycle(self, cycle: int):
         if 0 <= cycle <= 65535:
-            self.cycle = cycle
+            self._cycle = cycle
 
-    def patgenClkdiv(self, clkdiv: int):
+    @property
+    def clkdiv(self):
+        return self._clkdiv
+
+    @clkdiv.setter
+    def clkdiv(self, clkdiv: int):
         if 0 <= clkdiv <= 65535:
-            self.clkdiv = clkdiv
+            self._clkdiv = clkdiv
 
-    def patgenInitdelay(self, initdelay: int):
+    @property
+    def initdelay(self):
+        return self._initdelay
+
+    @initdelay.setter
+    def initdelay(self, initdelay: int):
         if 0 <= initdelay <= 65535:
-            self.initdelay = initdelay
+            self._initdelay = initdelay
 
-    def patgenPulsesperset(self, pulsesperset: int):
+    @property
+    def pulsesperset(self):
+        return self._pulsesperset
+
+    @pulsesperset.setter
+    def pulsesperset(self, pulsesperset: int):
         if 0 <= pulsesperset <= 255:
-            self.pulsesperset = pulsesperset
+            self._pulsesperset = pulsesperset
 
     def patgen(self, period: int, cycle: int, clkdiv: int, initdelay: int) -> bytearray:
 
@@ -56,21 +81,21 @@ class injection(nexysio):
         for i, val in enumerate(timestamps):
             data.extend(self.patgenWrite(i, val))
 
-        # Period
+        # Set period
         data.extend(self.patgenWrite(8, period))
 
-        # Flags
+        # Set flags
         data.extend(self.patgenWrite(9, 0b010100))
 
-        # runlength
+        # Set runlength
         data.extend(self.patgenWrite(10, cycle >> 8))
         data.extend(self.patgenWrite(11, cycle % 256))
 
-        # initial delay
+        # Set initial delay
         data.extend(self.patgenWrite(12, initdelay >> 8))
         data.extend(self.patgenWrite(13, initdelay % 256))
 
-        # clkdiv
+        # Set clkdiv
         data.extend(self.patgenWrite(14, clkdiv >> 8))
         data.extend(self.patgenWrite(15, clkdiv % 256))
 

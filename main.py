@@ -35,7 +35,7 @@ nexys.write(dummybits+asicbits)
 ############################ Configure Voltageboard ######################
 
 # Configure Voltageboard in Slot 4 with list values
-vdacbits = nexys.vbVector(4, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
+vdacbits = nexys.vbVector(4, [0.1, 0.2, 0.3, 1, 0.5, 0.6, 0.7, 0.8])
 
 # Generate pattern for Voltageboard Register 12 with clockdivider 8
 vbbits = nexys.writeSRgecco(12, vdacbits, 8)
@@ -50,11 +50,11 @@ nexys.write(injdacbits)
 inj = injection()
 
 # Set Injection Params
-inj.patgenPeriod(100)
-inj.patgenClkdiv(300)
-inj.patgenInitdelay(200)
-inj.patgenCycle(0)
-inj.patgenPulsesperset(1)
+inj.period = 100
+inj.clkdiv = 300
+inj.initdelay = 100
+inj.cycle = 0
+inj.pulsesperset = 1
 
 # Stop injection
 stopinj = inj.stop()
