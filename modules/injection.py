@@ -20,6 +20,7 @@ class injection(nexysio):
         self.cycle = 0
         self.clkdiv = 0
         self.initdelay = 0
+        self.pulsesperset= 1
 
     def __patgenReset(self, reset: bool):
         return super(injection, self).writeRegister(PG_RESET, reset)
@@ -38,6 +39,9 @@ class injection(nexysio):
 
     def patgenInitdelay(self, initdelay: int):
         self.initdelay = initdelay
+        
+    def patgenPulsesperset(self, pulsesperset: int):
+        self.pulsesperset = pulsesperset
 
     def patgen(self, period: int, cycle: int, clkdiv: int, initdelay: int) -> bytearray:
 
@@ -84,12 +88,12 @@ class injection(nexysio):
         output = super(injection, self).writeRegister(PG_OUTPUT, 1)
         patgenconfig = self.patgen(
             self.period, self.cycle, self.clkdiv, self.initdelay)
-        pulses = self.patgenWrite(7, 1)
+        pulses = self.patgenWrite(7, self.pulsesperset)
 
         data = output+patgenconfig+pulses
         print("Injection vector({} Bytes): {}\n".format(len(data), data.hex()))
 
-        return data
+        return bytes(data)
 
     def start(self):
 
@@ -101,7 +105,7 @@ class injection(nexysio):
         data.extend(self.__patgenSuspend(False))
 
         print("Start inj({} Bytes): {}\n".format(len(data), data.hex()))
-        return data
+        return bytes(data)
 
     def stop(self):
 
@@ -111,4 +115,4 @@ class injection(nexysio):
         data.extend(self.__patgenReset(True))
 
         print("Stop inj({} Bytes): {}\n".format(len(data), data.hex()))
-        return data
+        return bytes(data)

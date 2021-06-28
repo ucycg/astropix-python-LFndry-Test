@@ -54,18 +54,19 @@ inj.patgenPeriod(100)
 inj.patgenClkdiv(300)
 inj.patgenInitdelay(200)
 inj.patgenCycle(0)
+inj.patgenPulsesperset(1)
 
 # Stop injection
 stopinj = inj.stop()
-nexys.write(bytes(stopinj))
+nexys.write(stopinj)
 
 # Configure injection
 injvector = inj.configureInjection()
-nexys.write(bytes(injvector))
+nexys.write(injvector)
 
 # Start Injection
 startinj = inj.start()
-nexys.write(bytes(startinj))
+nexys.write(startinj)
 
 # Close connection
 nexys.close()
