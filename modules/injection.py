@@ -121,7 +121,7 @@ class injection(nexysio):
         pulses = self.patgenWrite(7, self.pulsesperset)
 
         data = output+patgenconfig+pulses
-        print("Injection vector({} Bytes): {}\n".format(len(data), data.hex()))
+        print("Injection vector({} Bytes): 0x{}\n".format(len(data), data.hex()))
 
         return bytes(data)
 
@@ -134,7 +134,7 @@ class injection(nexysio):
         data.extend(self.__patgenReset(False))
         data.extend(self.__patgenSuspend(False))
 
-        print("Start inj({} Bytes): {}\n".format(len(data), data.hex()))
+        print("Start inj({} Bytes): 0x{}\n".format(len(data), data.hex()))
         return bytes(data)
 
     def stop(self):
@@ -144,5 +144,5 @@ class injection(nexysio):
         data.extend(self.__patgenSuspend(True))
         data.extend(self.__patgenReset(True))
 
-        print("Stop inj({} Bytes): {}\n".format(len(data), data.hex()))
+        print("Stop inj({} Bytes): 0x{}\n".format(len(data), data.hex()))
         return bytes(data)

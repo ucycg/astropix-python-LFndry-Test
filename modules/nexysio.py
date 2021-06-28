@@ -20,25 +20,23 @@ LD_GECCO = 0x04
 
 
 class nexysio:
-    
+
     testvar = 1
 
     def openDevice(self, number: int):
-        
+
         self.handle = ftd.open(number)
-            
 
         deviceinfo = self.handle.getDeviceInfo()
-        
+
         if 'description' in deviceinfo and b'Digilent USB Device A' == deviceinfo['description']:
             print("\u001b[32mDigilent USB A opened\n \u001b[0m")
 
             self.__setup()
         else:
             self.close()
-            
+
             raise NameError(f"Unknown Device with index {number}")
-            
 
     def write(self, value: bytes):
         self.handle.write(value)
@@ -46,12 +44,9 @@ class nexysio:
     def close(self):
         self.handle.close()
 
-    def __AddBytes(self, value: int, clkdiv: int) -> bytes:
+    def __AddBytes(self, value: int, clkdiv: int) -> bytearray:
 
-        if clkdiv < 1:
-            clkdiv = 1
-
-        return bytearray([value]*clkdiv)
+        return bytearray([value])*clkdiv if clkdiv > 1 else bytearray([value])
 
     def __setup(self):
         """Set FTDI setting with int value from 0 to 63"""
@@ -61,11 +56,11 @@ class nexysio:
         self.handle.setBitMode(0xFF, 0x40)  # Set Synchronous 245 FIFO Mode
         self.handle.setLatencyTimer(2)
         self.handle.setUSBParameters(64000, 64000)  # Set Usb frame
-        #self.handle.setDivisor(2)           # 60 Mhz Clock divider
+        # self.handle.setDivisor(2)           # 60 Mhz Clock divider
 
     def writeRegister(self, register: int, value: int, flush=False):
         """Write Single Byte to Register
-        
+
         Attributes:
             register     FTDI Register to write
             value        Bytestring
@@ -78,18 +73,18 @@ class nexysio:
 
     def readRegister(self, register: int) -> int:
         """Write Single Byte to Register
-        
+
         Attributes:
             register     FTDI Register to read
         """
-        
+
         self.handle.write(bytes([READ_ADRESS, register, 0x00, 0x01]))
         answer = self.handle.read(1)
         print("Read Register {} Value 0x{}".format(register, answer.hex()))
 
         return answer
-    
-    def writeSRgecco(self, address: int, value: bytes, clkdiv=16) -> bytes:
+
+    def writeSRgecco(self, address: int, value: bytearray, clkdiv=16) -> bytes:
         """Write to GECCO SR"""
 
         # Number of Bytes to write
@@ -98,18 +93,17 @@ class nexysio:
         hByte = int(length/256)
         lByte = length % 256
 
-        header = bytes([WRITE_ADRESS, address, hByte, lByte])
+        header = bytearray([WRITE_ADRESS, address, hByte, lByte])
 
         print("\nWrite GECCO Config\n===============================")
         print("Length: {} hByte: {} lByte: {}\n".format(length, hByte, lByte))
-        print("Header: {}".format(header.hex()))
-        print("Data ({} Bits): {}\n".format(len(value), value.bin))
+        print("Header: 0x{}".format(header.hex()))
+        print("Data ({} Bits): 0b{}\n".format(len(value), value.bin))
 
         bit, data = 0, bytearray()
 
         # data
         for bit in value:
-
             if bit == 1:
                 pattern = SIN_GECCO
             else:
@@ -134,9 +128,9 @@ class nexysio:
         data.extend(self.__AddBytes(0x00, clkdiv))
 
         # concatenate header+dataasic
-        return b"".join([header,data])
-    
-    def writeSRasic(self, value: bytes, sendload: bool, clkdiv=16) -> bytes:
+        return b''.join([header, data])
+
+    def writeSRasic(self, value: bytearray, sendload: bool, clkdiv=16) -> bytes:
         """Write to ASIC SR"""
 
         # Number of Bytes to write
@@ -145,12 +139,12 @@ class nexysio:
         hByte = int(length/256)
         lByte = length % 256
 
-        header = bytes([WRITE_ADRESS, SR_ASIC_ADRESS, hByte, lByte])
+        header = bytearray([WRITE_ADRESS, SR_ASIC_ADRESS, hByte, lByte])
 
         print("\nWrite Asic Config\n===============================")
         print("Length: {} hByte: {} lByte: {}\n".format(length, hByte, lByte))
-        print("Header: {}".format(header.hex()))
-        print("Data ({} Bits): {}\n".format(len(value), value.bin))
+        print("Header: 0x{}".format(header.hex()))
+        print("Data ({} Bits): 0b{}\n".format(len(value), value.bin))
 
         bit, data = 0, bytearray()
 
@@ -176,4 +170,4 @@ class nexysio:
             data.extend(self.__AddBytes(0x00, 10*clkdiv))
 
         # concatenate header+data
-        return b"".join([header,data])
+        return b''.join([header, data])
