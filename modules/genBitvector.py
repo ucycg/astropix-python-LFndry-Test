@@ -99,11 +99,14 @@ class genBitvector:
 
         vdacbits = BitArray()
         vdac = 0
+
+        # Reverse List dacs
         dacs.reverse()
+
         for vdac in dacs:
-            if vdac > 1.8:
+            if not 0 <= vdac <= 1.8:
                 print(
-                    "\u001b[31mDAC on VB pos{} {}V exceeds 1.8V\n-> Set to 0V \u001b[0m".format(pos, vdac))
+                    "\u001b[31mDAC on VB pos{} {}V not in range 0 - 1.8V\n-> Set to 0V \u001b[0m".format(pos, vdac))
                 vdac = 0
 
             dacvalue = int(vdac*16383/3.3)

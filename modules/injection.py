@@ -20,7 +20,7 @@ class injection(nexysio):
         self.cycle = 0
         self.clkdiv = 0
         self.initdelay = 0
-        self.pulsesperset= 1
+        self.pulsesperset = 1
 
     def __patgenReset(self, reset: bool):
         return super(injection, self).writeRegister(PG_RESET, reset)
@@ -29,19 +29,24 @@ class injection(nexysio):
         return super(injection, self).writeRegister(PG_SUSPEND, suspend)
 
     def patgenPeriod(self, period: int):
-        self.period = period
+        if 0 <= period <= 255:
+            self.period = period
 
     def patgenCycle(self, cycle: int):
-        self.cycle = cycle
+        if 0 <= cycle <= 65535:
+            self.cycle = cycle
 
     def patgenClkdiv(self, clkdiv: int):
-        self.clkdiv = clkdiv
+        if 0 <= clkdiv <= 65535:
+            self.clkdiv = clkdiv
 
     def patgenInitdelay(self, initdelay: int):
-        self.initdelay = initdelay
-        
+        if 0 <= initdelay <= 65535:
+            self.initdelay = initdelay
+
     def patgenPulsesperset(self, pulsesperset: int):
-        self.pulsesperset = pulsesperset
+        if 0 <= pulsesperset <= 255:
+            self.pulsesperset = pulsesperset
 
     def patgen(self, period: int, cycle: int, clkdiv: int, initdelay: int) -> bytearray:
 
