@@ -8,10 +8,10 @@ For Bitmanipulation the Bitstring package is used.
 Features:
 * Write asicSR
 * Configure Voltageboards
+* Configure Injectionboard
 * Read/Write to single registers
 
 TODO:
-* Injectionboard
 * SPI
 
 ### Linux

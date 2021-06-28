@@ -63,15 +63,17 @@ class nexysio:
         self.handle.setUSBParameters(64000, 64000)  # Set Usb frame
         #self.handle.setDivisor(2)           # 60 Mhz Clock divider
 
-    def writeRegister(self, register: int, value: int):
+    def writeRegister(self, register: int, value: int, flush=False):
         """Write Single Byte to Register
         
         Attributes:
             register     FTDI Register to write
             value        Bytestring
         """
-
-        self.handle.write(bytes([WRITE_ADRESS, register, 0x00, 0x01, value]))
+        if flush:
+            return self.handle.write(bytes([WRITE_ADRESS, register, 0x00, 0x01, value]))
+        else:
+            return bytes([WRITE_ADRESS, register, 0x00, 0x01, value])
         print("Write Register {} Value {}".format(register, hex(value)))
 
     def readRegister(self, register: int) -> int:
