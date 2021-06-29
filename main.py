@@ -29,10 +29,10 @@ def main():
 
     # Write zeros
     dummyconfig = BitArray(uint=0, length=245)
-    dummybits = nexys.write_sr_asic(dummyconfig, True)
+    dummybits = nexys.write_asic(dummyconfig, True)
 
     # Write config
-    asicbits = nexys.write_sr_asic(asicconfig, True)
+    asicbits = nexys.write_asic(asicconfig, True)
     nexys.write(dummybits+asicbits)
 
     #
@@ -40,13 +40,13 @@ def main():
     #
 
     # Set measured 1V for one-point calibration
-    nexys.vcal = 0.988
+    nexys.vcal = 0.989
 
     # Configure Voltageboard in Slot 4 with list values
     vdacbits = nexys.vb_vector(4, [0.1, 0.2, 0.3, 1, 0.5, 0.6, 0.7, 0.8])
 
     # Generate pattern for Voltageboard Register 12 with clockdivider 8
-    vbbits = nexys.write_sr_gecco(12, vdacbits, 8)
+    vbbits = nexys.write_gecco(12, vdacbits, 8)
     nexys.write(vbbits)
 
     #
@@ -54,12 +54,12 @@ def main():
     #
 
     # Set Injection level
-    injdacbits = nexys.write_sr_gecco(12, nexys.vb_vector(5, [1, 1]), 8)
+    injdacbits = nexys.write_gecco(12, nexys.vb_vector(5, [1, 1]), 8)
     nexys.write(injdacbits)
 
     inj = Injection()
 
-    # Set Injection Params
+    # Set Injection Params 330MHz clock
     inj.period = 100
     inj.clkdiv = 300
     inj.initdelay = 100
