@@ -5,5 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: cclauss/GitHub-Action-for-pylint@0.7.0
-      - run: pip install -r requirements.txt ; pylint **/*.py
+      - name: Install dependencies
+        run: pip install -r requirements.txt 
+      - name: Analyse code with pylint   
+        run: pylint **/*.py
       
