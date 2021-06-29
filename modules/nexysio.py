@@ -74,11 +74,13 @@ class nexysio:
             register     FTDI Register to write
             value        Bytestring
         """
+        print(f"Write Register {register} Value {hex(value)}")
+        
         if flush:
             return self.handle.write(bytes([WRITE_ADRESS, register, 0x00, 0x01, value]))
 
         return bytes([WRITE_ADRESS, register, 0x00, 0x01, value])
-        print(f"Write Register {register} Value {hex(value)}")
+        
 
     def readRegister(self, register: int) -> int:
         """Write Single Byte to Register
