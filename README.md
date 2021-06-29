@@ -7,7 +7,7 @@ For Bitmanipulation the Bitstring package is used.
 
 Features:
 * Write asicSR
-* Configure Voltageboards
+* Configure Voltageboards (+calibration)
 * Configure Injectionboard
 * Read/Write to single registers
 

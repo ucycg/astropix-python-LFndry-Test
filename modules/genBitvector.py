@@ -69,6 +69,8 @@ class genBitvector:
             'nu33': 0,
         }
 
+        self.vcal = 1
+
     def __inttobitvector_6b(self, value: int):
 
         try:
@@ -89,11 +91,10 @@ class genBitvector:
         for dac, value in self.dacs.items():
             bitvector.append(self.__inttobitvector_6b(value))
 
-        if MSBfirst:
-            return bitvector
-        else:
+        if not MSBfirst:
             bitvector.reverse()
-            return bitvector
+
+        return bitvector
 
     def vbVector(self, pos: int, dacs: list) -> BitArray:
 
@@ -106,10 +107,10 @@ class genBitvector:
         for vdac in dacs:
             if not 0 <= vdac <= 1.8:
                 print(
-                    "\u001b[31mDAC on VB pos{} {}V not in range 0 - 1.8V\n-> Set to 0V \u001b[0m".format(pos, vdac))
+                    f"\u001b[31mDAC on VB pos{pos} {vdac}V not in range 0 - 1.8V\n-> Set to 0V \u001b[0m")
                 vdac = 0
 
-            dacvalue = int(vdac*16383/3.3)
+            dacvalue = int(vdac*16383/3.3/self.vcal)
 
             vdacbits.append(BitArray(uint=dacvalue, length=14))
             vdacbits.append(BitArray(uint=0, length=2))
@@ -117,6 +118,15 @@ class genBitvector:
         vdacbits.append(BitArray(uint=(0b10000000 >> (pos-1)), length=8))
 
         return vdacbits
+
+    @property
+    def vcal(self):
+        return self._vcal
+
+    @vcal.setter
+    def vcal(self, voltage: float):
+        if 0.9 <= voltage <= 1.1:
+            self._vcal = voltage
 
     def injVector(self):
         pass
