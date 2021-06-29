@@ -85,7 +85,11 @@ class Injection(Nexysio):
         if 0 <= pulsesperset <= 255:
             self._pulsesperset = pulsesperset
 
-    def patgen(self, period: int, cycle: int, clkdiv: int, delay: int) -> bytearray:
+    def patgen(
+            self, period: int,
+            cycle: int,
+            clkdiv: int,
+            delay: int) -> bytearray:
         """Generate vector for injectionpattern"""
 
         data = bytearray()

@@ -102,7 +102,7 @@ class Nexysio:
 
         return answer
 
-    def write_sr_gecco(self, address: int, value: bytearray, clkdiv=16) -> bytes:
+    def write_gecco(self, address: int, value: bytearray, clkdiv=16) -> bytes:
         """Write to GECCO SR"""
 
         # Number of Bytes to write
@@ -144,7 +144,7 @@ class Nexysio:
         # concatenate header+dataasic
         return b''.join([header, data])
 
-    def write_sr_asic(self, value: bytearray, wload: bool, clkdiv=16) -> bytes:
+    def write_asic(self, value: bytearray, wload: bool, clkdiv=16) -> bytes:
         """Write to ASIC SR"""
 
         # Number of Bytes to write

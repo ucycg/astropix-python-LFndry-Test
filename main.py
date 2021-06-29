@@ -20,12 +20,12 @@ def main():
     nexys.write_register(0x09, 0x55, True)
     nexys.read_register(0x09)
 
-    # Generate pattern for asicSR
-    asicconfig = nexys.asic_vector()
-
     #
     # Write Asicconfig
     #
+
+    # Generate pattern for asicSR
+    asicconfig = nexys.asic_vector()
 
     # Write zeros
     dummyconfig = BitArray(uint=0, length=245)
