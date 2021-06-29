@@ -35,3 +35,7 @@ If yes, create a file in /etc/udev/rules.d/ with the following content to unbid 
 Reload rules with:
 
     sudo udevadm trigger
+
+Create links to shared lib:
+
+    sudo ldconfig
