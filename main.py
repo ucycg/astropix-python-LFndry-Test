@@ -22,7 +22,9 @@ nexys.readRegister(0x09)
 # Generate pattern for asicSR
 asicconfig = nexys.asicVector()
 
-############################ Write Asicconfig ############################
+#
+# Write Asicconfig
+#
 
 # Write zeros
 dummyconfig = BitArray(uint=0, length=245)
@@ -33,20 +35,25 @@ dummybits = nexys.writeSRasic(dummyconfig, True)
 asicbits = nexys.writeSRasic(asicconfig, True)
 nexys.write(dummybits+asicbits)
 
-############################ Configure Voltageboard ######################
 
-# Configure Voltageboard in Slot 4 with list values
+#
+# Configure Voltageboard
+#
 
 # Set measured 1V for one-point calibration
 nexys.vcal = 0.988
 
+# Configure Voltageboard in Slot 4 with list values
 vdacbits = nexys.vbVector(4, [0.1, 0.2, 0.3, 0.5, 0.5, 0.6, 0.7, 0.8])
 
 # Generate pattern for Voltageboard Register 12 with clockdivider 8
 vbbits = nexys.writeSRgecco(12, vdacbits, 8)
 nexys.write(vbbits)
 
-############################ Injection ###################################
+
+#
+# Injection
+#
 
 # Set Injection level
 injdacbits = nexys.writeSRgecco(12, nexys.vbVector(5, [1, 1]), 8)
