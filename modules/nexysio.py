@@ -76,8 +76,8 @@ class nexysio:
         """
         if flush:
             return self.handle.write(bytes([WRITE_ADRESS, register, 0x00, 0x01, value]))
-        else:
-            return bytes([WRITE_ADRESS, register, 0x00, 0x01, value])
+
+        return bytes([WRITE_ADRESS, register, 0x00, 0x01, value])
         print(f"Write Register {register} Value {hex(value)}")
 
     def readRegister(self, register: int) -> int:
@@ -130,7 +130,7 @@ class nexysio:
 
         data.extend([LD_GECCO, 0x00])
 
-        data = self.__AddBytes2(data, clkdiv)
+        data = self.__AddBytes(data, clkdiv)
 
         # concatenate header+dataasic
         return b''.join([header, data])
@@ -168,8 +168,8 @@ class nexysio:
         if sendload:
             load.extend([0x00, LD_ASIC, 0x00])
 
-        data = self.__AddBytes2(data, clkdiv)
-        data.extend(self.__AddBytes2(load, clkdiv*10))
+        data = self.__AddBytes(data, clkdiv)
+        data.extend(self.__AddBytes(load, clkdiv*10))
 
         # concatenate header+data
         return b''.join([header, data])
