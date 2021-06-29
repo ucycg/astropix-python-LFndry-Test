@@ -1,2 +1,9 @@
-- uses: cclauss/GitHub-Action-for-pylint@0.7.0
-- run: pip install -r requirements.txt ; pylint **/*.py
+name: GitHub Action for pylint
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: cclauss/GitHub-Action-for-pylint@0.7.0
+      - run: pip install -r requirements.txt ; pylint **/*.py
+      
