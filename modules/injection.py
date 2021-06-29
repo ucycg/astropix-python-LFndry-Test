@@ -23,10 +23,10 @@ class injection(nexysio):
         self.pulsesperset = 0
 
     def __patgenReset(self, reset: bool):
-        return super(injection, self).writeRegister(PG_RESET, reset)
+        return super().writeRegister(PG_RESET, reset)
 
     def __patgenSuspend(self, suspend: bool):
-        return super(injection, self).writeRegister(PG_SUSPEND, suspend)
+        return super().writeRegister(PG_SUSPEND, suspend)
 
     @property
     def period(self):
@@ -105,10 +105,10 @@ class injection(nexysio):
 
         data = bytearray()
 
-        data.extend(super(injection, self).writeRegister(PG_ADDRESS, address))
-        data.extend(super(injection, self).writeRegister(PG_DATA, value))
-        data.extend(super(injection, self).writeRegister(PG_WRITE, 1))
-        data.extend(super(injection, self).writeRegister(PG_WRITE, 0))
+        data.extend(super().writeRegister(PG_ADDRESS, address))
+        data.extend(super().writeRegister(PG_DATA, value))
+        data.extend(super().writeRegister(PG_WRITE, 1))
+        data.extend(super().writeRegister(PG_WRITE, 0))
 
         return data
 
@@ -121,7 +121,7 @@ class injection(nexysio):
         pulses = self.patgenWrite(7, self.pulsesperset)
 
         data = output+patgenconfig+pulses
-        print("Injection vector({} Bytes): 0x{}\n".format(len(data), data.hex()))
+        print(f"Injection vector({len(data)} Bytes): 0x{data.hex()}\n")
 
         return bytes(data)
 
@@ -134,7 +134,7 @@ class injection(nexysio):
         data.extend(self.__patgenReset(False))
         data.extend(self.__patgenSuspend(False))
 
-        print("Start inj({} Bytes): 0x{}\n".format(len(data), data.hex()))
+        print(f"Start inj({len(data)} Bytes): 0x{data.hex()}\n")
         return bytes(data)
 
     def stop(self):
@@ -144,5 +144,5 @@ class injection(nexysio):
         data.extend(self.__patgenSuspend(True))
         data.extend(self.__patgenReset(True))
 
-        print("Stop inj({} Bytes): 0x{}\n".format(len(data), data.hex()))
+        print(f"Stop inj({len(data)} Bytes): 0x{data.hex()}\n")
         return bytes(data)

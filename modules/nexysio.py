@@ -21,7 +21,8 @@ LD_GECCO = 0x04
 
 class nexysio:
 
-    testvar = 1
+    # def __init__(self):
+    #    self.handle=0
 
     def openDevice(self, number: int):
 
@@ -46,7 +47,15 @@ class nexysio:
 
     def __AddBytes(self, value: int, clkdiv: int) -> bytearray:
 
-        return bytearray([value])*clkdiv if clkdiv > 1 else bytearray([value])
+        data = bytearray()
+
+        if clkdiv < 1:
+            clkdiv = 1
+
+        for byte in value:
+            data.extend(bytearray([byte])*clkdiv)
+
+        return data
 
     def __setup(self):
         """Set FTDI setting with int value from 0 to 63"""
@@ -69,7 +78,7 @@ class nexysio:
             return self.handle.write(bytes([WRITE_ADRESS, register, 0x00, 0x01, value]))
         else:
             return bytes([WRITE_ADRESS, register, 0x00, 0x01, value])
-        print("Write Register {} Value {}".format(register, hex(value)))
+        print(f"Write Register {register} Value {hex(value)}")
 
     def readRegister(self, register: int) -> int:
         """Write Single Byte to Register
@@ -80,7 +89,7 @@ class nexysio:
 
         self.handle.write(bytes([READ_ADRESS, register, 0x00, 0x01]))
         answer = self.handle.read(1)
-        print("Read Register {} Value 0x{}".format(register, answer.hex()))
+        print("Read Register {register} Value 0x{answer.hex()}")
 
         return answer
 
@@ -96,9 +105,9 @@ class nexysio:
         header = bytearray([WRITE_ADRESS, address, hByte, lByte])
 
         print("\nWrite GECCO Config\n===============================")
-        print("Length: {} hByte: {} lByte: {}\n".format(length, hByte, lByte))
-        print("Header: 0x{}".format(header.hex()))
-        print("Data ({} Bits): 0b{}\n".format(len(value), value.bin))
+        print(f"Length: {length} hByte: {hByte} lByte: {lByte}\n")
+        print(f"Header: 0x{header.hex()}")
+        print(f"Data ({len(value)} Bits): 0b{value.bin}\n")
 
         bit, data = 0, bytearray()
 
@@ -109,23 +118,19 @@ class nexysio:
             else:
                 pattern = 0
 
-            # Generate double clocked pattern
-            data.extend(self.__AddBytes(pattern, clkdiv))
-            data.extend(self.__AddBytes(pattern | 1, clkdiv))
-            data.extend(self.__AddBytes(pattern, clkdiv))
+            data.extend([pattern, pattern | 1, pattern])
 
         # Load signal
-        data.extend(self.__AddBytes(LD_GECCO, clkdiv))
-        data.extend(self.__AddBytes(0x00, clkdiv))
+        data.extend([LD_GECCO, 0x00])
 
         i = 0
         while i < 8:
-            data.extend(self.__AddBytes(0x01, clkdiv))
-            data.extend(self.__AddBytes(0x00, clkdiv))
+            data.extend([0x01, 0x00])
             i += 1
 
-        data.extend(self.__AddBytes(LD_GECCO, clkdiv))
-        data.extend(self.__AddBytes(0x00, clkdiv))
+        data.extend([LD_GECCO, 0x00])
+
+        data = self.__AddBytes2(data, clkdiv)
 
         # concatenate header+dataasic
         return b''.join([header, data])
@@ -142,11 +147,11 @@ class nexysio:
         header = bytearray([WRITE_ADRESS, SR_ASIC_ADRESS, hByte, lByte])
 
         print("\nWrite Asic Config\n===============================")
-        print("Length: {} hByte: {} lByte: {}\n".format(length, hByte, lByte))
-        print("Header: 0x{}".format(header.hex()))
-        print("Data ({} Bits): 0b{}\n".format(len(value), value.bin))
+        print(f"Length: {length} hByte: {hByte} lByte: {lByte}\n")
+        print(f"Header: 0x{header.hex()}")
+        print(f"Data ({len(value)} Bits): 0b{value.bin}\n")
 
-        bit, data = 0, bytearray()
+        bit, data, load = 0, bytearray(), bytearray()
 
         # data
         for bit in value:
@@ -157,17 +162,14 @@ class nexysio:
                 pattern = 0
 
             # Generate double clocked pattern
-            data.extend(self.__AddBytes(pattern, clkdiv))
-            data.extend(self.__AddBytes(pattern | 1, clkdiv))
-            data.extend(self.__AddBytes(pattern, clkdiv))
-            data.extend(self.__AddBytes(pattern | 2, clkdiv))
-            data.extend(self.__AddBytes(pattern, clkdiv))
+            data.extend([pattern, pattern | 1, pattern, pattern | 2, pattern])
 
         # Load signal
         if sendload:
-            data.extend(self.__AddBytes(0x00, 10*clkdiv))
-            data.extend(self.__AddBytes(LD_ASIC, 10*clkdiv))
-            data.extend(self.__AddBytes(0x00, 10*clkdiv))
+            load.extend([0x00, LD_ASIC, 0x00])
+
+        data = self.__AddBytes2(data, clkdiv)
+        data.extend(self.__AddBytes2(load, clkdiv*10))
 
         # concatenate header+data
         return b''.join([header, data])
