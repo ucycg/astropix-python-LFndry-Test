@@ -1,2 +1,17 @@
-- uses: cclauss/GitHub-Action-for-pylint@0.7.0
-- run: pip install -r requirements.txt ; pylint **/*.py
+on: [push, pull_request]
+
+jobs:
+  python-lint:
+    runs-on: ubuntu-latest
+    name: CI workflow
+    steps:
+    - name: checkout source repo
+      uses: actions/checkout@v2
+
+    - name: linting
+      uses: alexanderdamiani/pylinter@v1.2.0
+      with:
+        python-root: '.'
+        flake8-flags: '--count --show-source --statistics'
+        mypy-flags: '--ignore-missing-imports'
+        fail-on-isort: true
