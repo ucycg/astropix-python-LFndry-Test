@@ -7,7 +7,9 @@ Created on Fri Jun 25 16:28:27 2021
 from bitstring import BitArray
 
 
-class genBitvector:
+class Genbitvector:
+    """Generate bit patterns"""
+
     def __init__(self):
 
         self.digitalconfig = {'interrupt_pushpull': 0,
@@ -71,32 +73,38 @@ class genBitvector:
 
         self.vcal = 1
 
-    def __inttobitvector_6b(self, value: int):
+    @staticmethod
+    def __inttobitvector_6b(value: int):
+        """Convert int to 6bit bitarray"""
 
         try:
-            return BitArray(uint=value, length=6)
-        except:
-            raise TypeError("Allowed Dacvalues 0 - 63")
+            vector = BitArray(uint=value, length=6)
+        except TypeError:
+            print("Allowed Dacvalues 0 - 63")
 
-    def asicVector(self, MSBfirst=False) -> BitArray:
+        return vector
+
+    def asic_vector(self, msbfirst=False) -> BitArray:
+        """Generate asic bitvector from digital, bias and dacconfig"""
 
         bitvector = BitArray()
 
-        for dac, value in self.digitalconfig.items():
+        for value in self.digitalconfig.values():
             bitvector.append(BitArray(uint=value, length=1))
 
-        for dac, value in self.biasconfig.items():
+        for value in self.biasconfig.values():
             bitvector.append(BitArray(uint=value, length=1))
 
-        for dac, value in self.dacs.items():
+        for value in self.dacs.values():
             bitvector.append(self.__inttobitvector_6b(value))
 
-        if not MSBfirst:
+        if not msbfirst:
             bitvector.reverse()
 
         return bitvector
 
-    def vbVector(self, pos: int, dacs: list) -> BitArray:
+    def vb_vector(self, pos: int, dacs: list) -> BitArray:
+        """Generate VB bitvector from position and dacvalues"""
 
         vdacbits = BitArray()
         vdac = 0
@@ -107,7 +115,9 @@ class genBitvector:
         for vdac in dacs:
             if not 0 <= vdac <= 1.8:
                 print(
-                    f"\u001b[31mDAC on VB pos{pos} {vdac}V not in range 0 - 1.8V\n-> Set to 0V \u001b[0m")
+                    f"\u001b[31mDAC on VB{pos} {vdac}V not in range 0-1.8V\n\
+                    -> Set to 0V \u001b[0m")
+
                 vdac = 0
 
             dacvalue = int(vdac*16383/3.3/self.vcal)
@@ -121,6 +131,9 @@ class genBitvector:
 
     @property
     def vcal(self):
+        """Property to get/set voltageboard calibration value\n
+        Set DAC to 1V and write measured value to vcal
+        """
         return self._vcal
 
     @vcal.setter
@@ -128,5 +141,7 @@ class genBitvector:
         if 0.9 <= voltage <= 1.1:
             self._vcal = voltage
 
-    def injVector(self):
+    def inj_vector(self):
+        """Dummy"""
+
         pass
