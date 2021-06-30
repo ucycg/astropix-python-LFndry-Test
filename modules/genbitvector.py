@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+""""""
 """
 Created on Fri Jun 25 16:28:27 2021
 
@@ -10,7 +11,7 @@ from bitstring import BitArray
 class Genbitvector:
     """Generate bit patterns"""
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.digitalconfig = {'interrupt_pushpull': 0,
                               'ResetB Biasblock': 0}
@@ -74,8 +75,11 @@ class Genbitvector:
         self.vcal = 1
 
     @staticmethod
-    def __inttobitvector_6b(value: int):
-        """Convert int to 6bit bitarray"""
+    def __inttobitvector_6b(value: int) -> BitArray:
+        """Convert int to 6bit bitarray
+
+        :param value: DAC value 0-63
+        """
 
         try:
             vector = BitArray(uint=value, length=6)
@@ -84,8 +88,11 @@ class Genbitvector:
 
         return vector
 
-    def asic_vector(self, msbfirst=False) -> BitArray:
-        """Generate asic bitvector from digital, bias and dacconfig"""
+    def asic_vector(self, msbfirst: bool = False) -> BitArray:
+        """Generate asic bitvector from digital, bias and dacconfig
+
+        :param msbfirst: Send vector MSB first
+        """
 
         bitvector = BitArray()
 
@@ -104,7 +111,11 @@ class Genbitvector:
         return bitvector
 
     def vb_vector(self, pos: int, dacs: list) -> BitArray:
-        """Generate VB bitvector from position and dacvalues"""
+        """Generate VB bitvector from position and dacvalues
+
+        :param pos: Card slot
+        :param dacs: List with DAC values
+        """
 
         vdacbits = BitArray()
         vdac = 0
@@ -130,18 +141,18 @@ class Genbitvector:
         return vdacbits
 
     @property
-    def vcal(self):
+    def vcal(self) -> float:
         """Property to get/set voltageboard calibration value\n
         Set DAC to 1V and write measured value to vcal
         """
         return self._vcal
 
     @vcal.setter
-    def vcal(self, voltage: float):
+    def vcal(self, voltage: float) -> None:
         if 0.9 <= voltage <= 1.1:
             self._vcal = voltage
 
-    def inj_vector(self):
+    def inj_vector(self) -> None:
         """Dummy"""
 
         pass

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+""""""
 """
 Created on Sun Jun 27 21:03:43 2021
 
@@ -17,71 +18,71 @@ PG_DATA = 7
 class Injection(Nexysio):
     """Sets injection setting for GECCO Injectionboard"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.period = 0
         self.cycle = 0
         self.clkdiv = 0
         self.initdelay = 0
         self.pulsesperset = 0
 
-    def __patgenreset(self, reset: bool):
+    def __patgenreset(self, reset: bool) -> bytes:
         return super().write_register(PG_RESET, reset)
 
-    def __patgensuspend(self, suspend: bool):
+    def __patgensuspend(self, suspend: bool) -> bytes:
         return super().write_register(PG_SUSPEND, suspend)
 
     @property
-    def period(self):
-        """Get/Set injection period"""
+    def period(self) -> int:
+        """Injection period"""
 
         return self._period
 
     @period.setter
-    def period(self, period: int):
+    def period(self, period: int) -> None:
         if 0 <= period <= 255:
             self._period = period
 
     @property
-    def cycle(self):
-        """Get/Set injection #pulses"""
+    def cycle(self) -> int:
+        """Injection #pulses"""
 
         return self._cycle
 
     @cycle.setter
-    def cycle(self, cycle: int):
+    def cycle(self, cycle: int) -> None:
         if 0 <= cycle <= 65535:
             self._cycle = cycle
 
     @property
-    def clkdiv(self):
-        """Get/Set injection clockdivider"""
+    def clkdiv(self) -> int:
+        """Injection clockdivider"""
 
         return self._clkdiv
 
     @clkdiv.setter
-    def clkdiv(self, clkdiv: int):
+    def clkdiv(self, clkdiv: int) -> None:
         if 0 <= clkdiv <= 65535:
             self._clkdiv = clkdiv
 
     @property
-    def initdelay(self):
-        """Get/Set injection initdelay"""
+    def initdelay(self) -> int:
+        """Injection initdelay"""
 
         return self._initdelay
 
     @initdelay.setter
-    def initdelay(self, initdelay: int):
+    def initdelay(self, initdelay: int) -> None:
         if 0 <= initdelay <= 65535:
             self._initdelay = initdelay
 
     @property
-    def pulsesperset(self):
-        """Get/Set injection pulses/set"""
+    def pulsesperset(self) -> int:
+        """Injection pulses/set"""
 
         return self._pulsesperset
 
     @pulsesperset.setter
-    def pulsesperset(self, pulsesperset: int):
+    def pulsesperset(self, pulsesperset: int) -> None:
         if 0 <= pulsesperset <= 255:
             self._pulsesperset = pulsesperset
 
@@ -90,7 +91,13 @@ class Injection(Nexysio):
             cycle: int,
             clkdiv: int,
             delay: int) -> bytearray:
-        """Generate vector for injectionpattern"""
+        """Generate vector for injectionpattern
+
+        :param period: Set injection period 0-255
+        :param cycle: Set injection cycle 0-65535
+        :param clkdiv: Set injection clockdivider 0-65535
+        :param delay: Set injection pulse delay 0-65535
+        """
 
         data = bytearray()
         timestamps = [1, 3, 0, 0, 0, 0, 0, 0]
@@ -119,7 +126,11 @@ class Injection(Nexysio):
         return data
 
     def patgenwrite(self, address: int, value: int) -> bytearray:
-        """Subfunction of patgen()"""
+        """Subfunction of patgen()
+
+        .param address: Register address
+        :param value: Value to append to writebuffer
+        """
 
         data = bytearray()
 
@@ -130,7 +141,7 @@ class Injection(Nexysio):
 
         return data
 
-    def configureinjection(self):
+    def configureinjection(self) -> None:
         """Generate injection vector for set output, pattern and pulses/set"""
 
         print("\nWrite Injection Config\n===============================")
@@ -145,7 +156,7 @@ class Injection(Nexysio):
 
         return bytes(data)
 
-    def start(self):
+    def start(self) -> None:
         """Start injection"""
 
         data = bytearray()
@@ -158,7 +169,7 @@ class Injection(Nexysio):
         print(f"Start inj({len(data)} Bytes): 0x{data.hex()}\n")
         return bytes(data)
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop injection"""
 
         data = bytearray()

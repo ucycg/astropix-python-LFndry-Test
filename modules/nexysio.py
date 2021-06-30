@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+""""""
 """
 Created on Fri Jun 25 16:10:45 2021
 
@@ -29,16 +30,19 @@ class Nexysio:
 
         data = bytearray()
 
-        if clkdiv < 1:
-            clkdiv = 1
+        clkdiv = max(clkdiv, 1)
 
         for byte in value:
             data.extend(bytearray([byte])*clkdiv)
 
         return data
 
-    def open_device(self, number: int):
-        """Opens the FTDI with given index"""
+    def open_device(self, number: int) -> None:
+        """
+        Opens the FTDI device
+
+        :param number: Device index
+        """
 
         self.handle = ftd.open(number)
 
@@ -53,17 +57,20 @@ class Nexysio:
 
             raise NameError(f"Unknown Device with index {number}")
 
-    def write(self, value: bytes):
-        """Direct write to FTDI chip"""
+    def write(self, value: bytes) -> None:
+        """Direct write to FTDI chip
+
+        :param value: Bytestring to write
+        """
 
         self.handle.write(value)
 
-    def close(self):
+    def close(self) -> None:
         """Close connection"""
 
         self.handle.close()
 
-    def __setup(self):
+    def __setup(self) -> None:
         """Set FTDI USB connection settings"""
 
         self.handle.setTimeouts(1000, 500)  # Timeout RX,TX
@@ -73,12 +80,12 @@ class Nexysio:
         self.handle.setUSBParameters(64000, 64000)  # Set Usb frame
         # self.handle.setDivisor(2)           # 60 Mhz Clock divider
 
-    def write_register(self, register: int, value: int, flush=False):
+    def write_register(self, register: int, value: int,
+                       flush: bool = False) -> bytes:
         """Write Single Byte to Register
 
-        Attributes:
-            register     FTDI Register to write
-            value        Bytestring
+        :param register: FTDI Register to write
+        :param value: Bytestring
         """
         # print(f"Write Register {register} Value {hex(value)}")
 
@@ -92,8 +99,7 @@ class Nexysio:
     def read_register(self, register: int) -> int:
         """Read Single Byte from Register
 
-        Attributes:
-            register     FTDI Register to read
+        :param register: FTDI Register to read from
         """
 
         self.handle.write(bytes([READ_ADRESS, register, 0x00, 0x01]))
@@ -102,8 +108,14 @@ class Nexysio:
 
         return answer
 
-    def write_gecco(self, address: int, value: bytearray, clkdiv=16) -> bytes:
-        """Write to GECCO SR"""
+    def write_gecco(self, address: int, value: bytearray,
+                    clkdiv: int = 16) -> bytes:
+        """Write to GECCO SR
+
+        :param address: PCB register
+        :param value: Bytearray vector
+        :param clkdiv: Clockdivider 0-65535
+        """
 
         # Number of Bytes to write
         length = (len(value)*3+20)*clkdiv
@@ -140,8 +152,14 @@ class Nexysio:
         # concatenate header+dataasic
         return b''.join([header, data])
 
-    def write_asic(self, value: bytearray, wload: bool, clkdiv=16) -> bytes:
-        """Write to ASIC SR"""
+    def write_asic(self, value: bytearray, wload: bool,
+                   clkdiv: int = 16) -> bytes:
+        """Write to ASIC SR
+
+        :param value: Bytearray vector
+        :param wload: Send load signal
+        :param clkdiv: Clockdivider 0-65535
+        """
 
         # Number of Bytes to write
         length = (len(value)*5+30)*clkdiv
