@@ -118,7 +118,7 @@ class Nexysio:
         """
 
         # Number of Bytes to write
-        length = (len(value) * 3 + 20)*clkdiv
+        length = (len(value) * 3 + 20) * clkdiv
 
         hbyte = length >> 8
         lbyte = length % 256
