@@ -131,12 +131,12 @@ class Genbitvector:
 
                 vdac = 0
 
-            dacvalue = int(vdac*16383/3.3/self.vcal)
+            dacvalue = int(vdac * 16383 / 3.3 / self.vcal)
 
             vdacbits.append(BitArray(uint=dacvalue, length=14))
             vdacbits.append(BitArray(uint=0, length=2))
 
-        vdacbits.append(BitArray(uint=(0b10000000 >> (pos-1)), length=8))
+        vdacbits.append(BitArray(uint=(0b10000000 >> (pos - 1)), length=8))
 
         return vdacbits
 

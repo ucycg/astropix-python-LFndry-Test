@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+""""""
 """
 Created on Sat Jun 26 00:10:56 2021
 
 @author: Nicolas Striebig
 """
+
 from bitstring import BitArray
 
 from modules.gecco import Gecco
@@ -14,8 +16,8 @@ def main():
     nexys = Gecco()
 
     # Open FTDI Device with Index 0
-    nexys.open_device(0)
-
+    handle = nexys.open_device(0)
+    print(handle)
     # Write 0x55 to register 0x09 and read it back
     nexys.write_register(0x09, 0x55, True)
     nexys.read_register(0x09)
@@ -33,7 +35,7 @@ def main():
 
     # Write config
     asicbits = nexys.write_asic(asicconfig, True)
-    nexys.write(dummybits+asicbits)
+    nexys.write(dummybits + asicbits)
 
     #
     # Configure Voltageboard
@@ -43,7 +45,7 @@ def main():
     nexys.vcal = 0.989
 
     # Configure Voltageboard in Slot 4 with list values
-    vdacbits = nexys.vb_vector(4, [0.1, 0.2, 0.3, 1, 0.5, 0.6, 0.7, 0.8])
+    vdacbits = nexys.vb_vector(4, [0.1, 0.2, 0.3, 1.5, 0.5, 0.6, 0.7, 0.8])
 
     # Generate pattern for Voltageboard Register 12 with clockdivider 8
     vbbits = nexys.write_gecco(12, vdacbits, 8)

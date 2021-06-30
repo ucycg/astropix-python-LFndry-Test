@@ -151,7 +151,7 @@ class Injection(Nexysio):
             self.period, self.cycle, self.clkdiv, self.initdelay)
         pulses = self.patgenwrite(7, self.pulsesperset)
 
-        data = output+patgenconfig+pulses
+        data = output + patgenconfig + pulses
         print(f"Injection vector({len(data)} Bytes): 0x{data.hex()}\n")
 
         return bytes(data)

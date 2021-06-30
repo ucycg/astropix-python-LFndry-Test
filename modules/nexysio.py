@@ -33,7 +33,7 @@ class Nexysio:
         clkdiv = max(clkdiv, 1)
 
         for byte in value:
-            data.extend(bytearray([byte])*clkdiv)
+            data.extend(bytearray([byte]) * clkdiv)
 
         return data
 
@@ -118,7 +118,7 @@ class Nexysio:
         """
 
         # Number of Bytes to write
-        length = (len(value)*3+20)*clkdiv
+        length = (len(value) * 3 + 20)*clkdiv
 
         hbyte = length >> 8
         lbyte = length % 256
@@ -143,7 +143,7 @@ class Nexysio:
         data.extend([LD_GECCO, 0x00])
 
         # Add 8 clocks
-        data.extend([0x01, 0x00]*8)
+        data.extend([0x01, 0x00] * 8)
 
         data.extend([LD_GECCO, 0x00])
 
@@ -162,7 +162,7 @@ class Nexysio:
         """
 
         # Number of Bytes to write
-        length = (len(value)*5+30)*clkdiv
+        length = (len(value) * 5 + 30) * clkdiv
 
         hbyte = length >> 8
         lbyte = length % 256
@@ -189,7 +189,7 @@ class Nexysio:
             load.extend([0x00, LD_ASIC, 0x00])
 
         data = self.__addbytes(data, clkdiv)
-        data.extend(self.__addbytes(load, clkdiv*10))
+        data.extend(self.__addbytes(load, clkdiv * 10))
 
         # concatenate header+data
         return b''.join([header, data])
