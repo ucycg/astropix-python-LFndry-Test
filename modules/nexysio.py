@@ -64,7 +64,7 @@ class Nexysio:
         self.handle.close()
 
     def __setup(self):
-        """Set FTDI setting with int value from 0 to 63"""
+        """Set FTDI USB connection settings"""
 
         self.handle.setTimeouts(1000, 500)  # Timeout RX,TX
         self.handle.setBitMode(0xFF, 0x00)  # Reset
@@ -108,7 +108,7 @@ class Nexysio:
         # Number of Bytes to write
         length = (len(value)*3+20)*clkdiv
 
-        hbyte = int(length/256)
+        hbyte = length >> 8
         lbyte = length % 256
 
         header = bytearray([WRITE_ADRESS, address, hbyte, lbyte])
@@ -122,20 +122,16 @@ class Nexysio:
 
         # data
         for bit in value:
-            if bit == 1:
-                pattern = SIN_GECCO
-            else:
-                pattern = 0
+
+            pattern = SIN_GECCO if bit == 1 else 0
 
             data.extend([pattern, pattern | 1, pattern])
 
         # Load signal
         data.extend([LD_GECCO, 0x00])
 
-        i = 0
-        while i < 8:
-            data.extend([0x01, 0x00])
-            i += 1
+        # Add 8 clocks
+        data.extend([0x01, 0x00]*8)
 
         data.extend([LD_GECCO, 0x00])
 
@@ -150,7 +146,7 @@ class Nexysio:
         # Number of Bytes to write
         length = (len(value)*5+30)*clkdiv
 
-        hbyte = int(length/256)
+        hbyte = length >> 8
         lbyte = length % 256
 
         header = bytearray([WRITE_ADRESS, SR_ASIC_ADRESS, hbyte, lbyte])
@@ -165,10 +161,7 @@ class Nexysio:
         # data
         for bit in value:
 
-            if bit == 1:
-                pattern = SIN_ASIC
-            else:
-                pattern = 0
+            pattern = SIN_ASIC if bit == 1 else 0
 
             # Generate double clocked pattern
             data.extend([pattern, pattern | 1, pattern, pattern | 2, pattern])
