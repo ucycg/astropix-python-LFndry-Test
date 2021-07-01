@@ -79,7 +79,7 @@ class Voltageboard(Nexysio):
         for index, value in enumerate(values):
 
             # If DAC out of range, set 0
-            if 0 > value > 1.8:
+            if not 0 <= value <= 1.8:
                 values[index] = 0
 
         self._dacvalues = values
