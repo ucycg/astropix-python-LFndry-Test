@@ -7,11 +7,16 @@ Created on Fri Jun 25 16:28:27 2021
 """
 from bitstring import BitArray
 
+from modules.nexysio import Nexysio
 
-class Genbitvector:
+
+class Asic(Nexysio):
     """Generate bit patterns"""
 
-    def __init__(self) -> None:
+    def __init__(self, handle) -> None:
+
+        super().__init__(handle)
+        self.handle = handle
 
         self.digitalconfig = {'interrupt_pushpull': 0,
                               'ResetB Biasblock': 0}
@@ -110,49 +115,15 @@ class Genbitvector:
 
         return bitvector
 
-    def vb_vector(self, pos: int, dacs: list) -> BitArray:
-        """Generate VB bitvector from position and dacvalues
+    def update_asic(self):
+        # Generate pattern for asicSR
 
-        :param pos: Card slot
-        :param dacs: List with DAC values
-        """
+        asicconfig = self.asic_vector()
 
-        vdacbits = BitArray()
-        vdac = 0
+        # Write zeros
+        dummyconfig = BitArray(uint=0, length=245)
+        dummybits = super().write_asic(dummyconfig, True)
 
-        # Reverse List dacs
-        dacs.reverse()
-
-        for vdac in dacs:
-            if not 0 <= vdac <= 1.8:
-                print(
-                    f"\u001b[31mDAC on VB{pos} {vdac}V not in range 0-1.8V\n\
-                    -> Set to 0V \u001b[0m")
-
-                vdac = 0
-
-            dacvalue = int(vdac * 16383 / 3.3 / self.vcal)
-
-            vdacbits.append(BitArray(uint=dacvalue, length=14))
-            vdacbits.append(BitArray(uint=0, length=2))
-
-        vdacbits.append(BitArray(uint=(0b10000000 >> (pos - 1)), length=8))
-
-        return vdacbits
-
-    @property
-    def vcal(self) -> float:
-        """Property to get/set voltageboard calibration value\n
-        Set DAC to 1V and write measured value to vcal
-        """
-        return self._vcal
-
-    @vcal.setter
-    def vcal(self, voltage: float) -> None:
-        if 0.9 <= voltage <= 1.1:
-            self._vcal = voltage
-
-    def inj_vector(self) -> None:
-        """Dummy"""
-
-        pass
+        # Write config
+        asicbits = super().write_asic(asicconfig, True)
+        super().write(dummybits + asicbits)

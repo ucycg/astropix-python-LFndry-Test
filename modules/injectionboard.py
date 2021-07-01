@@ -15,15 +15,18 @@ PG_ADDRESS = 6
 PG_DATA = 7
 
 
-class Injection(Nexysio):
+class Injectionboard(Nexysio):
     """Sets injection setting for GECCO Injectionboard"""
 
-    def __init__(self) -> None:
-        self.period = 0
-        self.cycle = 0
-        self.clkdiv = 0
-        self.initdelay = 0
-        self.pulsesperset = 0
+    def __init__(self, handle) -> None:
+
+        super().__init__(handle)
+
+        self._period = 0
+        self._cycle = 0
+        self._clkdiv = 0
+        self._initdelay = 0
+        self._pulsesperset = 0
 
     def __patgenreset(self, reset: bool) -> bytes:
         return super().write_register(PG_RESET, reset)
@@ -86,7 +89,7 @@ class Injection(Nexysio):
         if 0 <= pulsesperset <= 255:
             self._pulsesperset = pulsesperset
 
-    def patgen(
+    def __patgen(
             self, period: int,
             cycle: int,
             clkdiv: int,
@@ -103,32 +106,32 @@ class Injection(Nexysio):
         timestamps = [1, 3, 0, 0, 0, 0, 0, 0]
 
         for i, val in enumerate(timestamps):
-            data.extend(self.patgenwrite(i, val))
+            data.extend(self.__patgenwrite(i, val))
 
         # Set period
-        data.extend(self.patgenwrite(8, period))
+        data.extend(self.__patgenwrite(8, period))
 
         # Set flags
-        data.extend(self.patgenwrite(9, 0b010100))
+        data.extend(self.__patgenwrite(9, 0b010100))
 
         # Set runlength
-        data.extend(self.patgenwrite(10, cycle >> 8))
-        data.extend(self.patgenwrite(11, cycle % 256))
+        data.extend(self.__patgenwrite(10, cycle >> 8))
+        data.extend(self.__patgenwrite(11, cycle % 256))
 
         # Set initial delay
-        data.extend(self.patgenwrite(12, delay >> 8))
-        data.extend(self.patgenwrite(13, delay % 256))
+        data.extend(self.__patgenwrite(12, delay >> 8))
+        data.extend(self.__patgenwrite(13, delay % 256))
 
         # Set clkdiv
-        data.extend(self.patgenwrite(14, clkdiv >> 8))
-        data.extend(self.patgenwrite(15, clkdiv % 256))
+        data.extend(self.__patgenwrite(14, clkdiv >> 8))
+        data.extend(self.__patgenwrite(15, clkdiv % 256))
 
         return data
 
-    def patgenwrite(self, address: int, value: int) -> bytearray:
+    def __patgenwrite(self, address: int, value: int) -> bytearray:
         """Subfunction of patgen()
 
-        .param address: Register address
+        :param address: Register address
         :param value: Value to append to writebuffer
         """
 
@@ -141,22 +144,22 @@ class Injection(Nexysio):
 
         return data
 
-    def configureinjection(self) -> None:
+    def __configureinjection(self) -> bytes:
         """Generate injection vector for set output, pattern and pulses/set"""
 
         print("\nWrite Injection Config\n===============================")
 
         output = super().write_register(PG_OUTPUT, 1)
-        patgenconfig = self.patgen(
+        patgenconfig = self.__patgen(
             self.period, self.cycle, self.clkdiv, self.initdelay)
-        pulses = self.patgenwrite(7, self.pulsesperset)
+        pulses = self.__patgenwrite(7, self.pulsesperset)
 
         data = output + patgenconfig + pulses
         print(f"Injection vector({len(data)} Bytes): 0x{data.hex()}\n")
 
         return bytes(data)
 
-    def start(self) -> None:
+    def __start(self) -> bytes:
         """Start injection"""
 
         data = bytearray()
@@ -169,7 +172,7 @@ class Injection(Nexysio):
         print(f"Start inj({len(data)} Bytes): 0x{data.hex()}\n")
         return bytes(data)
 
-    def stop(self) -> None:
+    def __stop(self) -> bytes:
         """Stop injection"""
 
         data = bytearray()
@@ -179,3 +182,28 @@ class Injection(Nexysio):
 
         print(f"Stop inj({len(data)} Bytes): 0x{data.hex()}\n")
         return bytes(data)
+
+    def update_inj(self):
+        # Stop injection
+        stopinj = self.__stop()
+        super().write(stopinj)
+
+        # Configure injection
+        injvector = self.__configureinjection()
+        super().write(injvector)
+
+    def start(self):
+
+        # Stop inj
+        super().write(self.__stop())
+
+        # update inj
+        self.update_inj()
+
+        # Start Injection
+        super().write(self.__start())
+
+    def stop(self):
+        # Stop Injection
+        stopinj = self.__stop()
+        super().write(stopinj)

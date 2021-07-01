@@ -6,18 +6,18 @@ Created on Sat Jun 26 00:10:56 2021
 @author: Nicolas Striebig
 """
 
-from bitstring import BitArray
-
-from modules.gecco import Gecco
-from modules.injection import Injection
+from modules.nexysio import Nexysio
+from modules.asic import Asic
+from modules.voltageboard import Voltageboard
+from modules.injectionboard import Injectionboard
 
 
 def main():
-    nexys = Gecco()
+    nexys = Nexysio()
 
     # Open FTDI Device with Index 0
     handle = nexys.open_device(0)
-    print(handle)
+
     # Write 0x55 to register 0x09 and read it back
     nexys.write_register(0x09, 0x55, True)
     nexys.read_register(0x09)
@@ -27,39 +27,32 @@ def main():
     #
 
     # Generate pattern for asicSR
-    asicconfig = nexys.asic_vector()
-
-    # Write zeros
-    dummyconfig = BitArray(uint=0, length=245)
-    dummybits = nexys.write_asic(dummyconfig, True)
-
-    # Write config
-    asicbits = nexys.write_asic(asicconfig, True)
-    nexys.write(dummybits + asicbits)
+    asic = Asic(handle)
+    asic.update_asic()
 
     #
     # Configure Voltageboard
     #
 
-    # Set measured 1V for one-point calibration
-    nexys.vcal = 0.989
-
     # Configure Voltageboard in Slot 4 with list values
-    vdacbits = nexys.vb_vector(4, [0.1, 0.2, 0.3, 1.5, 0.5, 0.6, 0.7, 0.8])
+    # Set measured 1V for one-point calibration
+    vboard1 = Voltageboard(handle, 4, (8, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]))
+    vboard1.vcal = 0.989
+    vboard1.update_vb()
 
-    # Generate pattern for Voltageboard Register 12 with clockdivider 8
-    vbbits = nexys.write_gecco(12, vdacbits, 8)
-    nexys.write(vbbits)
+    #vboard1.dacvalues = (8, [1.2, 1, 1])
+    vboard1.update_vb()
+    vboard1.update_vb()
 
-    #
-    # Injection
+    #    # Injection
     #
 
     # Set Injection level
-    injdacbits = nexys.write_gecco(12, nexys.vb_vector(5, [1, 1]), 8)
-    nexys.write(injdacbits)
+    injvoltage = Voltageboard(handle, 5, (2, [1, 1]))
+    injvoltage.vcal = 0.989
+    injvoltage.update_vb()
 
-    inj = Injection()
+    inj = Injectionboard(handle)
 
     # Set Injection Params 330MHz clock
     inj.period = 100
@@ -68,17 +61,8 @@ def main():
     inj.cycle = 0
     inj.pulsesperset = 1
 
-    # Stop injection
-    stopinj = inj.stop()
-    nexys.write(stopinj)
-
-    # Configure injection
-    injvector = inj.configureinjection()
-    nexys.write(injvector)
-
-    # Start Injection
-    startinj = inj.start()
-    nexys.write(startinj)
+    # Start injection
+    #inj.start()
 
     # Close connection
     nexys.close()

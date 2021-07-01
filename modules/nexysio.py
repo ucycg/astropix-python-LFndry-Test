@@ -25,8 +25,12 @@ NEXYS_USB = b'Digilent USB Device A'
 class Nexysio:
     """Interface to Nexys FTDI Chip"""
 
+    def __init__(self, handle=0) -> None:
+        self.handle = handle
+        #self.open_device(number)
+
     @classmethod
-    def __addbytes(cls, value: int, clkdiv: int) -> bytearray:
+    def __addbytes(cls, value: bytearray, clkdiv: int) -> bytearray:
 
         data = bytearray()
 
@@ -37,7 +41,7 @@ class Nexysio:
 
         return data
 
-    def open_device(self, number: int) -> None:
+    def open_device(self, number: int):
         """
         Opens the FTDI device
 
@@ -52,6 +56,8 @@ class Nexysio:
             print("\u001b[32mDigilent USB A opened\n \u001b[0m")
 
             self.__setup()
+
+            return self.handle
         else:
             self.close()
 
@@ -86,6 +92,7 @@ class Nexysio:
 
         :param register: FTDI Register to write
         :param value: Bytestring
+        :param flush: Instant write
         """
         # print(f"Write Register {register} Value {hex(value)}")
 
