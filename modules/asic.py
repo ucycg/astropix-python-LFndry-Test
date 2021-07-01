@@ -11,7 +11,7 @@ from modules.nexysio import Nexysio
 
 
 class Asic(Nexysio):
-    """Generate bit patterns"""
+    """Configure ASIC"""
 
     def __init__(self, handle) -> None:
 
@@ -115,9 +115,10 @@ class Asic(Nexysio):
 
         return bitvector
 
-    def update_asic(self):
-        # Generate pattern for asicSR
+    def update_asic(self) -> None:
+        """Update ASIC"""
 
+        # Generate pattern for asicSR
         asicconfig = self.asic_vector()
 
         # Write zeros

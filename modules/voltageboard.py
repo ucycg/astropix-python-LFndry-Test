@@ -9,9 +9,9 @@ from bitstring import BitArray
 
 from modules.nexysio import Nexysio
 
-# Set dac with less than 8 elements
 
 class Voltageboard(Nexysio):
+    """Configure GECCO Voltageboard"""
 
     def __init__(self, handle, pos, dacvalues):
 
@@ -50,7 +50,7 @@ class Voltageboard(Nexysio):
 
     @property
     def vcal(self) -> float:
-        """Property to get/set voltageboard calibration value\n
+        """Voltageboard calibration value\n
         Set DAC to 1V and write measured value to vcal
         """
         return self._vcal
@@ -62,25 +62,25 @@ class Voltageboard(Nexysio):
 
     @property
     def dacvalues(self) -> list:
-        """DAC voltages list"""
+        """DAC voltages Tuple(Number of DACS, List Dacvalues)"""
         return self._dacvalues
 
     @dacvalues.setter
     def dacvalues(self, dacvalues: tuple) -> None:
 
+        # Get number of dacs and values from tuple
         length, values = dacvalues
-        # If length > 8 strip values, if < 8 append 0
+
+        # If length(values) > length strip values, if length(values) < length append zeros
         values = values[:length] + [0] * (length - len(values))
 
         for index, value in enumerate(values):
 
-            # If voltage out of range set 0
-            if not 0 <= value <= 1.8:
-                dacvalues[index] = 0
+            # If DAC out of range, set 0
+            if 0 > value > 1.8:
+                values[index] = 0
 
         self._dacvalues = values
-
-        print(f"set dacvalues: {values}\n")
 
     @property
     def pos(self) -> int:
@@ -93,14 +93,15 @@ class Voltageboard(Nexysio):
             self._pos = pos
 
     def update_vb(self) -> None:
-        # Set and write
-        # Set measured 1V for one-point calibration
+        """Update voltageboard"""
 
-        # Configure Voltageboard in Slot 4 with list values
+        # Generate vector
         vdacbits = self.__vb_vector(self.pos, self.dacvalues)
 
-        print(f'update_vb pos: {self.pos} value: {self.dacvalues}\n')
+        # print(f'update_vb pos: {self.pos} value: {self.dacvalues}\n')
 
-        # Generate pattern for Voltageboard Register 12 with clockdivider 8
+        # Generate pattern
         vbbits = super().write_gecco(12, vdacbits, 8)
+
+        # Write to nexys
         super().write(vbbits)

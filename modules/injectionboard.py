@@ -183,7 +183,9 @@ class Injectionboard(Nexysio):
         print(f"Stop inj({len(data)} Bytes): 0x{data.hex()}\n")
         return bytes(data)
 
-    def update_inj(self):
+    def update_inj(self) -> None:
+        """Update injectionboard"""
+
         # Stop injection
         stopinj = self.__stop()
         super().write(stopinj)
@@ -192,9 +194,10 @@ class Injectionboard(Nexysio):
         injvector = self.__configureinjection()
         super().write(injvector)
 
-    def start(self):
+    def start(self) -> None:
+        """Start injection"""
 
-        # Stop inj
+        # Stop injection
         super().write(self.__stop())
 
         # update inj
@@ -203,7 +206,8 @@ class Injectionboard(Nexysio):
         # Start Injection
         super().write(self.__start())
 
-    def stop(self):
-        # Stop Injection
+    def stop(self) -> None:
+        """Start injection"""
+
         stopinj = self.__stop()
         super().write(stopinj)

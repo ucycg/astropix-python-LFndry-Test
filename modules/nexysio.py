@@ -27,7 +27,6 @@ class Nexysio:
 
     def __init__(self, handle=0) -> None:
         self.handle = handle
-        #self.open_device(number)
 
     @classmethod
     def __addbytes(cls, value: bytearray, clkdiv: int) -> bytearray:

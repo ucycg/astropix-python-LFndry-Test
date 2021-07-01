@@ -36,13 +36,17 @@ def main():
 
     # Configure Voltageboard in Slot 4 with list values
     # Set measured 1V for one-point calibration
-    vboard1 = Voltageboard(handle, 4, (8, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]))
+    vboard1 = Voltageboard(
+        handle,
+        4,
+        (8, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]))
+
     vboard1.vcal = 0.989
     vboard1.update_vb()
 
-    #vboard1.dacvalues = (8, [1.2, 1, 1])
-    vboard1.update_vb()
-    vboard1.update_vb()
+    # Write only first 3 DACs, other DACs will be 0
+    # vboard1.dacvalues = (8, [1.2, 1, 1])
+    # vboard1.update_vb()
 
     #    # Injection
     #
@@ -62,7 +66,7 @@ def main():
     inj.pulsesperset = 1
 
     # Start injection
-    #inj.start()
+    inj.start()
 
     # Close connection
     nexys.close()
