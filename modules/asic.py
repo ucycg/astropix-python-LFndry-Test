@@ -77,8 +77,6 @@ class Asic(Nexysio):
             'nu33': 0,
         }
 
-        self.vcal = 1
-
     @staticmethod
     def __inttobitvector_6b(value: int) -> BitArray:
         """Convert int to 6bit bitarray
@@ -87,11 +85,9 @@ class Asic(Nexysio):
         """
 
         try:
-            vector = BitArray(uint=value, length=6)
+            return BitArray(uint=value, length=6)
         except TypeError:
             print("Allowed Dacvalues 0 - 63")
-
-        return vector
 
     def asic_vector(self, msbfirst: bool = False) -> BitArray:
         """Generate asic bitvector from digital, bias and dacconfig
@@ -118,13 +114,9 @@ class Asic(Nexysio):
     def update_asic(self) -> None:
         """Update ASIC"""
 
-        # Generate pattern for asicSR
-        asicconfig = self.asic_vector()
-
-        # Write zeros
-        dummyconfig = BitArray(uint=0, length=245)
-        dummybits = super().write_asic(dummyconfig, True)
+        # Write 245 zeros
+        dummybits = self.write_asic(BitArray(uint=0, length=245), True)
 
         # Write config
-        asicbits = super().write_asic(asicconfig, True)
-        super().write(dummybits + asicbits)
+        asicbits = self.write_asic(self.asic_vector(), True)
+        self.write(dummybits + asicbits)

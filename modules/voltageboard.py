@@ -73,7 +73,8 @@ class Voltageboard(Nexysio):
         # Get number of dacs and values from tuple
         length, values = dacvalues
 
-        # If length(values) > length strip values, if length(values) < length append zeros
+        # if length(values) > length strip values
+        # if length(values) < length append zeros
         values = values[:length] + [0] * (length - len(values))
 
         for index, value in enumerate(values):
@@ -103,7 +104,7 @@ class Voltageboard(Nexysio):
         # print(f'update_vb pos: {self.pos} value: {self.dacvalues}\n')
 
         # Generate pattern
-        vbbits = super().write_gecco(12, vdacbits, 8)
+        vbbits = self.write_gecco(12, vdacbits, 8)
 
         # Write to nexys
-        super().write(vbbits)
+        self.write(vbbits)

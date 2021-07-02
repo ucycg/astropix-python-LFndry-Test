@@ -29,10 +29,10 @@ class Injectionboard(Nexysio):
         self._pulsesperset = 0
 
     def __patgenreset(self, reset: bool) -> bytes:
-        return super().write_register(PG_RESET, reset)
+        return self.write_register(PG_RESET, reset)
 
     def __patgensuspend(self, suspend: bool) -> bytes:
-        return super().write_register(PG_SUSPEND, suspend)
+        return self.write_register(PG_SUSPEND, suspend)
 
     @property
     def period(self) -> int:
@@ -137,10 +137,10 @@ class Injectionboard(Nexysio):
 
         data = bytearray()
 
-        data.extend(super().write_register(PG_ADDRESS, address))
-        data.extend(super().write_register(PG_DATA, value))
-        data.extend(super().write_register(PG_WRITE, 1))
-        data.extend(super().write_register(PG_WRITE, 0))
+        data.extend(self.write_register(PG_ADDRESS, address))
+        data.extend(self.write_register(PG_DATA, value))
+        data.extend(self.write_register(PG_WRITE, 1))
+        data.extend(self.write_register(PG_WRITE, 0))
 
         return data
 
@@ -149,7 +149,7 @@ class Injectionboard(Nexysio):
 
         print("\nWrite Injection Config\n===============================")
 
-        output = super().write_register(PG_OUTPUT, 1)
+        output = self.write_register(PG_OUTPUT, 1)
         patgenconfig = self.__patgen(
             self.period, self.cycle, self.clkdiv, self.initdelay)
         pulses = self.__patgenwrite(7, self.pulsesperset)
@@ -187,27 +187,24 @@ class Injectionboard(Nexysio):
         """Update injectionboard"""
 
         # Stop injection
-        stopinj = self.__stop()
-        super().write(stopinj)
+        self.write(self.__stop())
 
         # Configure injection
-        injvector = self.__configureinjection()
-        super().write(injvector)
+        self.write(self.__configureinjection())
 
     def start(self) -> None:
         """Start injection"""
 
         # Stop injection
-        super().write(self.__stop())
+        self.write(self.__stop())
 
         # update inj
         self.update_inj()
 
         # Start Injection
-        super().write(self.__start())
+        self.write(self.__start())
 
     def stop(self) -> None:
         """Start injection"""
 
-        stopinj = self.__stop()
-        super().write(stopinj)
+        self.write(self.__stop())
