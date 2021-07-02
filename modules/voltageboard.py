@@ -17,7 +17,7 @@ class Voltageboard(Nexysio):
 
     def __init__(self, handle, pos: int, dacvalues: Tuple[int, List[float]]):
 
-        super().__init__(handle)
+        self.handle = handle
 
         self._pos = 0  # pos
         self._dacvalues = []  # dacvalues

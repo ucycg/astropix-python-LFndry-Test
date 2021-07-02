@@ -15,7 +15,6 @@ class Asic(Nexysio):
 
     def __init__(self, handle) -> None:
 
-        super().__init__(handle)
         self.handle = handle
 
         self.digitalconfig = {'interrupt_pushpull': 0,

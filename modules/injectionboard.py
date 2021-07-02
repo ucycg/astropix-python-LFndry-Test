@@ -20,7 +20,7 @@ class Injectionboard(Nexysio):
 
     def __init__(self, handle) -> None:
 
-        super().__init__(handle)
+        self.handle = handle
 
         self._period = 0
         self._cycle = 0
