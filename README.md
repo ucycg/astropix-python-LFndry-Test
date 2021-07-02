@@ -1,9 +1,9 @@
 # astropix-python
 
-Python based lightweight cross platform tool for controlling the GECCO System.
+Python based lightweight cross-platform tool for controlling the GECCO System.
 
 To interact with the FTDI-Chip the ftd2xx package is used, which provides a wrapper around the proprietary D2XX driver.
-For Bitmanipulation the Bitstring package is used.
+For Bitmanipulation the bitstring package is used.
 
 Features:
 * Write asicSR
@@ -14,7 +14,28 @@ Features:
 TODO:
 * SPI
 
+## Installation
+
+Requirements:
+* Python >= 3.6
+* packages: ftd2xx, bitstring
+* D2XX Driver
+
+Create venv:
+    
+    python3 -m venv astropix-python
+    source astropix-python/bin/activate 
+
+Install requirements:
+
+    pip install -r requirements.txt
+
+### Windows
+
+D2XX Driver should be pre-installed.
+
 ### Linux
+
 Install D2XX driver: [Installation Guide](https://ftdichip.com/wp-content/uploads/2020/08/AN_220_FTDI_Drivers_Installation_Guide_for_Linux-1.pdf)
 
 Check if VCP driver gets loaded:
