@@ -3,7 +3,8 @@
 Python based lightweight cross-platform tool for controlling the GECCO System.
 
 To interact with the FTDI-Chip the ftd2xx package is used, which provides a wrapper around the proprietary D2XX driver.
-For Bitmanipulation the bitstring package is used.
+The free pyftdi driver currently does not support the synchronous 245 FIFO mode.\
+For bit manipulation the bitstring package is used.
 
 Features:
 * Write asicSR
@@ -42,7 +43,7 @@ Check if VCP driver gets loaded:
     
     sudo lsmod | grep -a "ftdi_sio"
 
-If yes, create a file in /etc/udev/rules.d/ with the following content to unbid the VCP driver and make the device accessible for non-root users:
+If yes, create a rule e.g., 99-ftdi-nexys.rules in /etc/udev/rules.d/ with the following content to unbid the VCP driver and make the device accessible for non-root users:
 
     ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010",\
     PROGRAM="/bin/sh -c '\
