@@ -16,39 +16,47 @@ def main():
     nexys = Nexysio()
 
     # Open FTDI Device with Index 0
-    handle = nexys.open_device(0)
+    # handle = nexys.open(0)
+    handle = nexys.autoopen()
 
-    # Write 0x55 to register 0x09 and read it back
+    # Write and read directly to register
+    # Example: Write 0x55 to register 0x09 and read it back
     nexys.write_register(0x09, 0x55, True)
     nexys.read_register(0x09)
 
     #
-    # Write Asicconfig
+    # Configure ASIC
     #
 
-    # Generate pattern for asicSR
+    # Write to asicSR
     asic = Asic(handle)
     asic.update_asic()
+
+    # Update parameter
+    # asic.digitalconfig[f'En_Inj17'] = 1
+    # asic.update_asic()
 
     #
     # Configure Voltageboard
     #
 
     # Configure Voltageboard in Slot 4 with list values
-    # Set measured 1V for one-point calibration
     vboard1 = Voltageboard(
         handle,
         4,
         (8, [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]))
 
+    # Set measured 1V for one-point calibration
     vboard1.vcal = 0.989
+
     vboard1.update_vb()
 
     # Write only first 3 DACs, other DACs will be 0
     # vboard1.dacvalues = (8, [1.2, 1, 1])
     # vboard1.update_vb()
 
-    #    # Injection
+    #
+    # Configure Injectionboard
     #
 
     # Set Injection level
@@ -58,7 +66,7 @@ def main():
 
     inj = Injectionboard(handle)
 
-    # Set Injection Params 330MHz clock
+    # Set Injection Params for 330MHz patgen clock
     inj.period = 100
     inj.clkdiv = 300
     inj.initdelay = 100

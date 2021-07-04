@@ -83,7 +83,7 @@ class Nexysio:
                     # Return handle
                     return self.handle
 
-        print(f"Nexys not found")
+        print('Nexys not found')
         return False
 
     def write(self, value: bytes) -> None:
