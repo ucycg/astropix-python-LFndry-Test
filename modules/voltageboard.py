@@ -9,13 +9,11 @@ from bitstring import BitArray
 
 from modules.nexysio import Nexysio
 
-from typing import Tuple, List
-
 
 class Voltageboard(Nexysio):
     """Configure GECCO Voltageboard"""
 
-    def __init__(self, handle, pos: int, dacvalues: Tuple[int, List[float]]):
+    def __init__(self, handle, pos: int, dacvalues: tuple[int, list[float]]) -> None:
 
         self.handle = handle
 
@@ -27,7 +25,7 @@ class Voltageboard(Nexysio):
         self.pos = pos
         self.dacvalues = dacvalues
 
-    def __vb_vector(self, pos: int, dacs: List[float]) -> BitArray:
+    def __vb_vector(self, pos: int, dacs: list[float]) -> BitArray:
         """Generate VB bitvector from position and dacvalues
 
         :param pos: Card slot
@@ -63,12 +61,12 @@ class Voltageboard(Nexysio):
             self._vcal = voltage
 
     @property
-    def dacvalues(self) -> List[float]:
+    def dacvalues(self) -> list[float]:
         """DAC voltages Tuple(Number of DACS, List Dacvalues)"""
         return self._dacvalues
 
     @dacvalues.setter
-    def dacvalues(self, dacvalues: Tuple[int, List[float]]) -> None:
+    def dacvalues(self, dacvalues: tuple[int, list[float]]) -> None:
 
         # Get number of dacs and values from tuple
         length, values = dacvalues
