@@ -19,7 +19,8 @@ LD_ASIC = 0x08
 SIN_GECCO = 0x02
 LD_GECCO = 0x04
 
-NEXYS_USB = b'Digilent USB Device A'
+NEXYS_USB_DESC = b'Digilent USB Device A'
+NEXYS_USB_SER = b'210276'
 
 
 class Nexysio:
@@ -40,7 +41,7 @@ class Nexysio:
 
         return data
 
-    def open_device(self, number: int):
+    def open(self, number: int):
         """
         Opens the FTDI device
 
@@ -51,7 +52,7 @@ class Nexysio:
 
         devinfo = self.handle.getDeviceInfo()
 
-        if 'description' in devinfo and devinfo['description'] == NEXYS_USB:
+        if 'description' in devinfo and devinfo['description'] == NEXYS_USB_DESC:
             print("\u001b[32mDigilent USB A opened\n \u001b[0m")
 
             self.__setup()
@@ -61,6 +62,29 @@ class Nexysio:
             self.close()
 
             raise NameError(f"Unknown Device with index {number}")
+
+    def autoopen(self):
+        """
+        Auto-opens the FTDI device with NEXYS_USB description
+        """
+        # Get list with serialnumbers and descritions of all connected devices
+        device_serial = ftd.listDevices(0)
+        device_desc = ftd.listDevices(2)
+
+        # iterate through list and open device, if found
+        for index, value in enumerate(device_desc):
+            if value == NEXYS_USB_DESC:
+                if device_serial[index].startswith(NEXYS_USB_SER):
+                    self.handle = ftd.open(index)
+                    self.__setup()
+
+                    print("\u001b[32mDigilent USB A opened\n \u001b[0m")
+
+                    # Return handle
+                    return self.handle
+
+        print(f"Nexys not found")
+        return False
 
     def write(self, value: bytes) -> None:
         """Direct write to FTDI chip
@@ -140,7 +164,6 @@ class Nexysio:
 
         # data
         for bit in value:
-
             pattern = SIN_GECCO if bit == 1 else 0
 
             data.extend([pattern, pattern | 1, pattern])
@@ -184,7 +207,6 @@ class Nexysio:
 
         # data
         for bit in value:
-
             pattern = SIN_ASIC if bit == 1 else 0
 
             # Generate double clocked pattern
