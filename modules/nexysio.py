@@ -8,6 +8,8 @@ Created on Fri Jun 25 16:10:45 2021
 """
 import ftd2xx as ftd
 
+from modules.spi import Spi
+
 READ_ADRESS = 0x00
 WRITE_ADRESS = 0x01
 
@@ -23,14 +25,23 @@ NEXYS_USB_DESC = b'Digilent USB Device A'
 NEXYS_USB_SER = b'210276'
 
 
-class Nexysio:
+class Nexysio(Spi):
     """Interface to Nexys FTDI Chip"""
 
     def __init__(self, handle=0) -> None:
+        super().__init__()
         self.handle = handle
 
     @classmethod
     def __addbytes(cls, value: bytearray, clkdiv: int) -> bytearray:
+        """
+        Clockdivider by writing bytes multiple times
+
+        :param value: Bytearray to divide
+        :param clkdiv: Clockdivider
+
+        :returns: Device handle
+        """
 
         data = bytearray()
 
@@ -41,14 +52,16 @@ class Nexysio:
 
         return data
 
-    def open(self, number: int):
+    def open(self, index: int):
         """
         Opens the FTDI device
 
-        :param number: Device index
+        :param index: Device index
+
+        :returns: Device handle
         """
 
-        self.handle = ftd.open(number)
+        self.handle = ftd.open(index)
 
         devinfo = self.handle.getDeviceInfo()
 
@@ -58,14 +71,16 @@ class Nexysio:
             self.__setup()
 
             return self.handle
-        else:
-            self.close()
 
-            raise NameError(f"Unknown Device with index {number}")
+        self.close()
+
+        raise NameError(f"Unknown Device with index {index}")
 
     def autoopen(self):
         """
         Auto-opens the FTDI device with NEXYS_USB description
+
+        :returns: Device handle
         """
         # Get list with serialnumbers and descritions of all connected devices
         device_serial = ftd.listDevices(0)
@@ -87,7 +102,8 @@ class Nexysio:
         return False
 
     def write(self, value: bytes) -> None:
-        """Direct write to FTDI chip
+        """
+        Direct write to FTDI chip
 
         :param value: Bytestring to write
         """
@@ -111,11 +127,13 @@ class Nexysio:
 
     def write_register(self, register: int, value: int,
                        flush: bool = False) -> bytes:
-        """Write Single Byte to Register
+        """Write Bytes to Register
 
         :param register: FTDI Register to write
         :param value: Bytestring
         :param flush: Instant write
+
+        :returns: Bytestring with write header and data
         """
         # print(f"Write Register {register} Value {hex(value)}")
 
@@ -126,10 +144,37 @@ class Nexysio:
 
         return bytes(data)
 
+    def write_registers(self, register: int, value: bytearray,
+                        flush: bool = False) -> bytes:
+        """Write Single Byte to Register
+
+        :param register: FTDI Register to write
+        :param value: Bytestring
+        :param flush: Instant write
+
+        :returns: Bytestring with write header and 1 Byte data
+        """
+        # print(f"Write Register {register} Value {hex(value)}")
+        length = len(value)
+
+        hbyte = length >> 8
+        lbyte = length % 256
+
+        data = bytearray([WRITE_ADRESS, register, hbyte, lbyte])+value
+
+        if flush:
+            return self.handle.write(bytes(data))
+
+        print(f'Write Registers: {data}\n')
+        return data
+
     def read_register(self, register: int) -> int:
-        """Read Single Byte from Register
+        """
+        Read Single Byte from Register
 
         :param register: FTDI Register to read from
+
+        :returns: Register value
         """
 
         self.handle.write(bytes([READ_ADRESS, register, 0x00, 0x01]))
@@ -140,11 +185,14 @@ class Nexysio:
 
     def write_gecco(self, address: int, value: bytearray,
                     clkdiv: int = 16) -> bytes:
-        """Write to GECCO SR
+        """
+        Write to GECCO SR
 
         :param address: PCB register
         :param value: Bytearray vector
         :param clkdiv: Clockdivider 0-65535
+
+        :returns: Bytearray with GECCO configvector Header+Data
         """
 
         # Number of Bytes to write
@@ -183,11 +231,14 @@ class Nexysio:
 
     def write_asic(self, value: bytearray, wload: bool,
                    clkdiv: int = 16) -> bytes:
-        """Write to ASIC SR
+        """
+        Write to ASIC SR
 
         :param value: Bytearray vector
         :param wload: Send load signal
         :param clkdiv: Clockdivider 0-65535
+
+        :returns: Bytearray with ASIC configvector Header+Data
         """
 
         # Number of Bytes to write
