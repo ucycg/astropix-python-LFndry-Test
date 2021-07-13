@@ -30,6 +30,8 @@ class Voltageboard(Nexysio):
 
         :param pos: Card slot
         :param dacs: List with DAC values
+
+        :returns: Voltageboard config vector
         """
 
         vdacbits = BitArray()
@@ -50,7 +52,8 @@ class Voltageboard(Nexysio):
 
     @property
     def vcal(self) -> float:
-        """Voltageboard calibration value\n
+        """Voltageboard calibration value
+
         Set DAC to 1V and write measured value to vcal
         """
         return self._vcal
