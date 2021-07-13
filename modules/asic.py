@@ -69,7 +69,7 @@ class Asic(Nexysio):
             'nu26': 0,
             'nu27': 0,
             'nu28': 0,
-            'vncomp': 63,
+            'vncomp': 0,
             'nu30': 0,
             'nu31': 0,
             'nu32': 0,
@@ -77,7 +77,7 @@ class Asic(Nexysio):
         }
 
     @staticmethod
-    def __inttobitvector_6b(value: int) -> BitArray:
+    def __intto6bit(value: int) -> BitArray:
         """Convert int to 6bit bitarray
 
         :param value: DAC value 0-63
@@ -85,7 +85,7 @@ class Asic(Nexysio):
 
         try:
             return BitArray(uint=value, length=6)
-        except TypeError:
+        except ValueError:
             print("Allowed Dacvalues 0 - 63")
 
     def asic_vector(self, msbfirst: bool = False) -> BitArray:
@@ -103,7 +103,7 @@ class Asic(Nexysio):
             bitvector.append(BitArray(uint=value, length=1))
 
         for value in self.dacs.values():
-            bitvector.append(self.__inttobitvector_6b(value))
+            bitvector.append(self.__intto6bit(value))
 
         if not msbfirst:
             bitvector.reverse()
