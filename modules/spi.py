@@ -9,20 +9,26 @@ SIN_ASIC = 1
 
 SPI_CONFIG = 0x15
 SPI_CLKDIV = 0x16
-"""
-SPI_Config Register 21 (0x15)
-0 	Write FIFO reset
-1	Write FIFO empty flag (read-only)
-2	Write FIFO full flag (read-only)
-3	Read FIFO reset
-4	Read FIFO empty flag (read-only)
-5	Read FIFO full flag (read-only)
-6	SPI Readback Enable
-7	SPI module reset
-"""
 
 
 class Spi:
+    """
+    Nexys SPI Communication
+
+    Registers:
+    | SPI_Config Register 21 (0x15)
+        | 0 	Write FIFO reset
+        | 1	Write FIFO empty flag (read-only)
+        | 2	Write FIFO full flag (read-only)
+        | 3	Read FIFO reset
+        | 4	Read FIFO empty flag (read-only)
+        | 5	Read FIFO full flag (read-only)
+        | 6	SPI Readback Enable
+        | 7	SPI module reset
+    | SPI_CLKDIV Register 22
+    | SPI_Write Register 23
+    | SPI_Read Register 24
+    """
     def __init__(self):
         self._spi_clkdiv = 16
 
@@ -30,14 +36,20 @@ class Spi:
         pass
 
     @staticmethod
-    def asic_spi_vector(value: bytearray, load: int,
-                       clkdiv: int = 16) -> bytes:
+    def set_bit(value, bit):
+        return value | (1 << bit)
+
+    @staticmethod
+    def clear_bit(value, bit):
+        return value & ~(1 << bit)
+
+    @staticmethod
+    def asic_spi_vector(value: bytearray, load: int) -> bytes:
         """
         Write ASIC config via SPI
 
         :param value: Bytearray vector
         :param load: Load signal
-        :param clkdiv: Clockdivider 0-65535
 
         :returns: SPI ASIC config pattern
         """
@@ -46,7 +58,7 @@ class Spi:
         ck2 = 4
 
         # Number of Bytes to write
-        length = (len(value) * 5 + 30) * clkdiv
+        length = len(value) * 5 + 4
 
         print("\n SPI Write Asic Config\n===============================")
         print(f"Length: {length}\n")
@@ -79,37 +91,52 @@ class Spi:
     @spi_clkdiv.setter
     def spi_clkdiv(self, clkdiv: int):
 
-        self._spi_clkdiv
         if 0 <= clkdiv <= 65535:
+            self._spi_clkdiv = clkdiv
             self.write_register(SPI_CLKDIV, clkdiv, True)
 
-    def spi_enable(self, enable: bool):
+    def spi_enable(self):
         """
-        Enable SPI
+        Enable SPI by setting reset bits low
 
         Set SPI Reset bits to 0
-        :param enable: Enable
         """
+        configregister = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
 
-        if enable:
-            self.write_register(SPI_CONFIG, 0x89, True)
-            self.write_register(SPI_CONFIG, 0x12, True)
+        set_bits = [0, 3, 7]
+        clear_bits = [0, 3, 6, 7]
 
-    def writenocheck(self, setting):
+        # Set Reset bits 1
+        for bit in set_bits:
+            configregister = self.set_bit(configregister, bit)
+
+        # Set Reset bits and readback bit 0
+        for bit in clear_bits:
+            configregister = self.clear_bit(configregister, bit)
+
+        # Write new values
+        self.write_register(SPI_CONFIG, configregister, True)
+
+    def direct_write_spi(self, setting: int) -> bytearray:
+        """
+        Direct write to SPI Write Register
+
+        :param setting:
+        :returns:
+        """
         config = bytearray()
-        #config.extend([setting >> 16])
-        #config.extend([setting >> 8])
+        # config.extend([setting >> 16])
+        # config.extend([setting >> 8])
         config.extend([setting])
 
         print(f'Writenocheck: {config}\n')
         return self.write_registers(23, config, False)
 
-    def write_spi(self, data, pb, buffersize=1023):
+    def write_spi(self, data: bytearray, buffersize=1023) -> None:
         """
         Write to Nexys SPI Write FIFO
 
         :param data: Bytearray vector
-        :param pb: Load signal
         :param buffersize: BUffersize
         """
         waiting = True
@@ -137,14 +164,16 @@ class Spi:
 
             if counter > 0:
                 print(f'print data[i]:{data[i]}\n')
-                writebuffer += self.writenocheck(data[i])
+                writebuffer += self.direct_write_spi(data[i])
                 i += 1
                 counter -= 1
-                if (pb != 0) & ((i % 5) == 4):
+                if (i % 50) == 49:
                     print(f'Writebuffer: {writebuffer}\n')
                     self.write(bytes(writebuffer))
+                    writebuffer = bytearray()
+
             else:
-                result = int(self.read_register(SPI_CONFIG), base=16)
+                result = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
 
                 # WrFIFOEmpty value
                 compare_empty = 2
