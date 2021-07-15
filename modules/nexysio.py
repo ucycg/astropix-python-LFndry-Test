@@ -31,7 +31,7 @@ class Nexysio(Spi):
 
     def __init__(self, handle=0) -> None:
         super().__init__()
-        self.handle = handle
+        self._handle = handle
 
     @classmethod
     def __addbytes(cls, value: bytearray, clkdiv: int) -> bytearray:
@@ -62,20 +62,25 @@ class Nexysio(Spi):
         :returns: Device handle
         """
 
-        self.handle = ftd.open(index)
+        self._handle = ftd.open(index)
 
-        devinfo = self.handle.getDeviceInfo()
+        devinfo = self._handle.getDeviceInfo()
 
-        if 'description' in devinfo and devinfo['description'] == NEXYS_USB_DESC:
-            print("\u001b[32mDigilent USB A opened\n \u001b[0m")
+        try:
+            if 'description' in devinfo and devinfo['description'] == NEXYS_USB_DESC:
+                print("\u001b[32mDigilent USB A opened\n \u001b[0m")
 
-            self.__setup()
+            else:
+                self.close()
+                raise NameError
 
-            return self.handle
+        except NameError:
+            print(f'Unknown Device with index {index}')
+            sys.exit(1)
 
-        self.close()
+        self.__setup()
 
-        raise NameError(f"Unknown Device with index {index}")
+        return self._handle
 
     def autoopen(self):
         """
@@ -98,13 +103,13 @@ class Nexysio(Spi):
         for index, value in enumerate(device_desc):
             if value == NEXYS_USB_DESC:
                 if device_serial[index].startswith(NEXYS_USB_SER):
-                    self.handle = ftd.open(index)
+                    self._handle = ftd.open(index)
                     self.__setup()
 
                     print("\u001b[32mDigilent USB A opened\n \u001b[0m")
 
                     # Return handle
-                    return self.handle
+                    return self._handle
 
         print('Nexys not found')
         return False
@@ -117,23 +122,36 @@ class Nexysio(Spi):
 
         :param value: Bytestring to write
         """
+        try:
+            self._handle.write(value)
+        except AttributeError:
+            print('Nexys Write Error')
 
-        self.handle.write(value)
+    def read(self, num: int) -> bytes:
+        """
+        Direct read from FTDI chip
+
+        :param num: Number of Bytes to read
+        """
+        try:
+            return self._handle.read(num)
+        except AttributeError:
+            print('Nexys Read Error')
 
     def close(self) -> None:
         """Close connection"""
 
-        self.handle.close()
+        self._handle.close()
 
     def __setup(self) -> None:
         """Set FTDI USB connection settings"""
 
-        self.handle.setTimeouts(1000, 500)  # Timeout RX,TX
-        self.handle.setBitMode(0xFF, 0x00)  # Reset
-        self.handle.setBitMode(0xFF, 0x40)  # Set Synchronous 245 FIFO Mode
-        self.handle.setLatencyTimer(2)
-        self.handle.setUSBParameters(64000, 64000)  # Set Usb frame
-        # self.handle.setDivisor(2)           # 60 Mhz Clock divider
+        self._handle.setTimeouts(1000, 500)  # Timeout RX,TX
+        self._handle.setBitMode(0xFF, 0x00)  # Reset
+        self._handle.setBitMode(0xFF, 0x40)  # Set Synchronous 245 FIFO Mode
+        self._handle.setLatencyTimer(2)
+        self._handle.setUSBParameters(64000, 64000)  # Set Usb frame
+        # self._handle.setDivisor(2)           # 60 Mhz Clock divider
 
     def write_register(self, register: int, value: int,
                        flush: bool = False) -> bytes:
@@ -150,7 +168,7 @@ class Nexysio(Spi):
         data = [WRITE_ADRESS, register, 0x00, 0x01, value]
 
         if flush:
-            return self.handle.write(bytes(data))
+            self.write(bytes(data))
 
         return bytes(data)
 
@@ -173,12 +191,12 @@ class Nexysio(Spi):
         data = bytearray([WRITE_ADRESS, register, hbyte, lbyte]) + value
 
         if flush:
-            return self.handle.write(bytes(data))
+            self.write(bytes(data))
 
         print(f'Write Registers: {data}\n')
         return data
 
-    def read_register(self, register: int) -> int:
+    def read_register(self, register: int) -> bytes:
         """
         Read Single Byte from Register
 
@@ -187,14 +205,13 @@ class Nexysio(Spi):
         :returns: Register value
         """
 
-        self.handle.write(bytes([READ_ADRESS, register, 0x00, 0x01]))
-        answer = self.handle.read(1)
+        self.write(bytes([READ_ADRESS, register, 0x00, 0x01]))
+        answer = self.read(1)
         print(f"Read Register {register} Value 0x{answer.hex()}")
 
         return answer
 
-    def gen_gecco_pattern(self, address: int, value: bytearray,
-                    clkdiv: int = 16) -> bytes:
+    def gen_gecco_pattern(self, address: int, value: bytearray, clkdiv: int = 16) -> bytes:
         """
         Generate GECCO SR write pattern from bitvector
 

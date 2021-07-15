@@ -15,7 +15,7 @@ class Asic(Nexysio):
 
     def __init__(self, handle) -> None:
 
-        self.handle = handle
+        self._handle = handle
 
         self.digitalconfig = {'interrupt_pushpull': 0,
                               'ResetB Biasblock': 0}

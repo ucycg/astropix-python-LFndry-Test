@@ -20,7 +20,7 @@ class Injectionboard(Nexysio):
 
     def __init__(self, handle) -> None:
 
-        self.handle = handle
+        self._handle = handle
 
         self._period = 0
         self._cycle = 0
@@ -100,6 +100,8 @@ class Injectionboard(Nexysio):
         :param cycle: Set injection cycle 0-65535
         :param clkdiv: Set injection clockdivider 0-65535
         :param delay: Set injection pulse delay 0-65535
+
+        :returns: patgen vector
         """
 
         data = bytearray()
@@ -145,7 +147,11 @@ class Injectionboard(Nexysio):
         return data
 
     def __configureinjection(self) -> bytes:
-        """Generate injection vector for set output, pattern and pulses/set"""
+        """
+        Generate injection vector for set output, pattern and pulses/set
+
+        :returns: config vector
+        """
 
         print("\nWrite Injection Config\n===============================")
 
@@ -160,7 +166,11 @@ class Injectionboard(Nexysio):
         return bytes(data)
 
     def __start(self) -> bytes:
-        """Start injection"""
+        """
+        Start injection
+
+        :returns: start vector
+        """
 
         data = bytearray()
 
@@ -173,7 +183,11 @@ class Injectionboard(Nexysio):
         return bytes(data)
 
     def __stop(self) -> bytes:
-        """Stop injection"""
+        """
+        Stop injection
+
+        :returns: stop vector
+        """
 
         data = bytearray()
 
