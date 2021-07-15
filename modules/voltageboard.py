@@ -105,7 +105,7 @@ class Voltageboard(Nexysio):
         # print(f'update_vb pos: {self.pos} value: {self.dacvalues}\n')
 
         # Generate pattern
-        vbbits = self.write_gecco(12, vdacbits, 8)
+        vbbits = self.gen_gecco_pattern(12, vdacbits, 8)
 
         # Write to nexys
         self.write(vbbits)

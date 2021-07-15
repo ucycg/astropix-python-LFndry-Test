@@ -88,7 +88,7 @@ class Asic(Nexysio):
         except ValueError:
             print("Allowed Dacvalues 0 - 63")
 
-    def asic_vector(self, msbfirst: bool = False) -> BitArray:
+    def gen_asic_vector(self, msbfirst: bool = False) -> BitArray:
         """Generate asic bitvector from digital, bias and dacconfig
 
         :param msbfirst: Send vector MSB first
@@ -114,8 +114,8 @@ class Asic(Nexysio):
         """Update ASIC"""
 
         # Write 245 zeros
-        dummybits = self.write_asic(BitArray(uint=0, length=245), True)
+        dummybits = self.gen_asic_pattern(BitArray(uint=0, length=245), True)
 
         # Write config
-        asicbits = self.write_asic(self.asic_vector(), True)
+        asicbits = self.gen_asic_pattern(self.gen_asic_vector(), True)
         self.write(dummybits + asicbits)

@@ -7,6 +7,7 @@ Created on Fri Jun 25 16:10:45 2021
 
 """
 import ftd2xx as ftd
+import sys
 
 from modules.spi import Spi
 
@@ -86,6 +87,13 @@ class Nexysio(Spi):
         device_serial = ftd.listDevices(0)
         device_desc = ftd.listDevices(2)
 
+        try:
+            if device_serial is None:
+                raise TypeError
+        except TypeError:
+            print('No Devices found')
+            sys.exit(1)
+
         # iterate through list and open device, if found
         for index, value in enumerate(device_desc):
             if value == NEXYS_USB_DESC:
@@ -104,6 +112,8 @@ class Nexysio(Spi):
     def write(self, value: bytes) -> None:
         """
         Direct write to FTDI chip
+
+        Use with caution!
 
         :param value: Bytestring to write
         """
@@ -160,7 +170,7 @@ class Nexysio(Spi):
         hbyte = length >> 8
         lbyte = length % 256
 
-        data = bytearray([WRITE_ADRESS, register, hbyte, lbyte])+value
+        data = bytearray([WRITE_ADRESS, register, hbyte, lbyte]) + value
 
         if flush:
             return self.handle.write(bytes(data))
@@ -183,10 +193,10 @@ class Nexysio(Spi):
 
         return answer
 
-    def write_gecco(self, address: int, value: bytearray,
+    def gen_gecco_pattern(self, address: int, value: bytearray,
                     clkdiv: int = 16) -> bytes:
         """
-        Write to GECCO SR
+        Generate GECCO SR write pattern from bitvector
 
         :param address: PCB register
         :param value: Bytearray vector
@@ -229,10 +239,9 @@ class Nexysio(Spi):
         # concatenate header+dataasic
         return b''.join([header, data])
 
-    def write_asic(self, value: bytearray, wload: bool,
-                   clkdiv: int = 16) -> bytes:
+    def gen_asic_pattern(self, value: bytearray, wload: bool, clkdiv: int = 16) -> bytes:
         """
-        Write to ASIC SR
+        Generate ASIC SR write pattern from bitvector
 
         :param value: Bytearray vector
         :param wload: Send load signal
