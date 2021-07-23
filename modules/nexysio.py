@@ -196,17 +196,21 @@ class Nexysio(Spi):
         print(f'Write Registers: {data}\n')
         return data
 
-    def read_register(self, register: int) -> bytes:
+    def read_register(self, register: int, num: int = 1) -> bytes:
         """
         Read Single Byte from Register
 
         :param register: FTDI Register to read from
+        :param num: Number of bytes to read
 
         :returns: Register value
         """
 
-        self.write(bytes([READ_ADRESS, register, 0x00, 0x01]))
-        answer = self.read(1)
+        hbyte = num >> 8
+        lbyte = num % 256
+
+        self.write(bytes([READ_ADRESS, register, hbyte, lbyte]))
+        answer = self.read(num)
         print(f"Read Register {register} Value 0x{answer.hex()}")
 
         return answer
