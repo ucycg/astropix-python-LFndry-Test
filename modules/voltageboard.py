@@ -36,8 +36,8 @@ class Voltageboard(Nexysio):
 
         vdacbits = BitArray()
 
-        # Reverse List dacs
-        dacs = dacs[::-1]
+        # Reverse List of dacs in-place
+        dacs.reverse()
 
         for vdac in dacs:
 
