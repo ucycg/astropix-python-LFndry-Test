@@ -5,10 +5,19 @@ Created on Tue Jul 12 20:07:13 2021
 
 @author: Nicolas Striebig
 """
-SIN_ASIC = 1
+from time import sleep
+
+#SIN_ASIC = 1
+SPI_SR_CMD = 0x30
+
+SPI_SR_SIN = 0x80
+SPI_SR_LD = 0xff
 
 SPI_CONFIG = 0x15
 SPI_CLKDIV = 0x16
+
+SPI_WRITE_REG = 23
+SPI_READ_REG = 24
 
 
 class Spi:
@@ -64,21 +73,21 @@ class Spi:
         print(f"Length: {length}\n")
         print(f"Data ({len(value)} Bits): {value}\n")
 
-        bit, data = 0, bytearray()
+        # Write SPI SR Command to set MUX
+        data = bytearray([SPI_SR_CMD])
 
         # data
         for bit in value:
-            sin = SIN_ASIC if bit == 1 else 0
-            # Generate double clocked pattern
-            data.extend([sin, sin | ck1, sin, sin | ck2, sin])
+            sin = SPI_SR_SIN if bit == 1 else 0
+
+            data.extend([sin])
 
         # Load signal
         i = 0
         if load:
             while i < 4:
-                data.extend([sin | load])
+                data.extend([SPI_SR_LD])
                 i += 1
-            data.extend([sin])
 
         return data
 
@@ -117,20 +126,17 @@ class Spi:
         # Write new values
         self.write_register(SPI_CONFIG, configregister, True)
 
-    def direct_write_spi(self, setting: int) -> bytearray:
+    def direct_write_spi(self, data: bytes) -> None:
         """
         Direct write to SPI Write Register
 
-        :param setting:
-        :returns:
+        :param data: Data
         """
-        config = bytearray()
-        # config.extend([setting >> 16])
-        # config.extend([setting >> 8])
-        config.extend([setting])
+        self.write_registers(SPI_WRITE_REG, data, True)
 
-        print(f'Writenocheck: {config}\n')
-        return self.write_registers(23, config, False)
+    def read_spi(self, num: int):
+
+        return self.read_register(SPI_READ_REG, num)
 
     def write_spi(self, data: bytearray, buffersize=1023) -> None:
         """
@@ -143,8 +149,8 @@ class Spi:
         counter = 1000
 
         # Check if WrFIFO is Empty
-        while waiting & (counter > 0):
-            counter -= 1
+        while waiting: #& (counter > 0):
+            #counter -= 1
 
             # Convert Hex string to int
             result = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
@@ -154,6 +160,8 @@ class Spi:
 
             if (result & compare) != 0:
                 waiting = False
+            else:
+                sleep(0.002)
 
         i = 0
         writebuffer = bytearray()
@@ -164,12 +172,15 @@ class Spi:
 
             if counter > 0:
                 print(f'print data[i]:{data[i]}\n')
-                writebuffer += self.direct_write_spi(data[i])
+                # writebuffer += self.direct_write_spi(data[i])
+
+                writebuffer += bytearray([data[i]])
+
                 i += 1
                 counter -= 1
-                if (i % 50) == 49:
+                if (i % 5) == 4:
                     print(f'Writebuffer: {writebuffer}\n')
-                    self.write(bytes(writebuffer))
+                    self.direct_write_spi(bytes(writebuffer))
                     writebuffer = bytearray()
 
             else:
