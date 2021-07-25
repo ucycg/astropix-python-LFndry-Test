@@ -23,13 +23,15 @@ Requirements:
 * packages: ftd2xx, bitstring
 * D2XX Driver
 
-Create venv:
-    
-    python3 -m venv astropix-python
-    source astropix-python/bin/activate 
 
-Install requirements:
+    git clone git@github.com:nic-str/astropix-python.git
+    cd astropix-python
 
+    # Create venv
+    python3 -m venv astropix-venv
+    source astropix-venv/bin/activate
+
+    # Install Requirements
     pip install -r requirements.txt
 
 ### Windows
