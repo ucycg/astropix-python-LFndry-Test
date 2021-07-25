@@ -20,19 +20,20 @@ TODO:
 
 Requirements:
 * Python 3.9
-* packages: ftd2xx, bitstring
+* packages: ftd2xx, async-timeout, bitstring 
 * D2XX Driver
 
+```shell
+$ git clone git@github.com:nic-str/astropix-python.git
+$ cd astropix-python
 
-    git clone git@github.com:nic-str/astropix-python.git
-    cd astropix-python
+# Create venv
+$ python3 -m venv astropix-venv
+$ source astropix-venv/bin/activate
 
-    # Create venv
-    python3 -m venv astropix-venv
-    source astropix-venv/bin/activate
-
-    # Install Requirements
-    pip install -r requirements.txt
+# Install Requirements
+$ pip install -r requirements.txt
+```
 
 ### Windows
 
