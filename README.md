@@ -7,19 +7,22 @@ The free pyftdi driver currently does not support the synchronous 245 FIFO mode.
 For bit manipulation the bitstring package is used.
 
 Features:
-* Write ASIC (SR)
-* Configure Voltageboards (+calibration)
+* Write ASIC config (SR)
+* Configure Voltageboards (+offset cal)
 * Configure Injectionboard
-* Read/Write to single registers
+* Read/Write single registers
+* SPI Readout
 
 TODO:
+* QSPI Daisychain Readout
 * Write ASIC (SPI)
-* SPI Readout
+* Chip config JSON import
+* (GUI)
 
 ## Installation
 
 Requirements:
-* Python 3.9
+* Python >= 3.9
 * packages: ftd2xx, async-timeout, bitstring 
 * D2XX Driver
 
