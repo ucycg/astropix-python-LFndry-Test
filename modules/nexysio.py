@@ -123,6 +123,12 @@ class Nexysio(Spi):
         :param value: Bytestring to write
         """
         try:
+            # split large vectors into multiple parts
+            while (len(value) > 64000):
+                print("Split writevector in parts")
+                self._handle.write(value[0:63999])
+                value = value [64000:]
+
             self._handle.write(value)
         except AttributeError:
             print('Nexys Write Error')
@@ -260,7 +266,7 @@ class Nexysio(Spi):
         # concatenate header+dataasic
         return b''.join([header, data])
 
-    def gen_asic_pattern(self, value: bytearray, wload: bool, clkdiv: int = 16) -> bytes:
+    def gen_asic_pattern(self, value: bytearray, wload: bool, clkdiv: int = 8) -> bytes:
         """
         Generate ASIC SR write pattern from bitvector
 
@@ -273,6 +279,8 @@ class Nexysio(Spi):
 
         # Number of Bytes to write
         length = (len(value) * 5 + 30) * clkdiv
+
+        print(f'Bytes to write: {length}\n')
 
         hbyte = length >> 8
         lbyte = length % 256

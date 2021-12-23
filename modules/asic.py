@@ -4,6 +4,8 @@
 Created on Fri Jun 25 16:28:27 2021
 
 @author: Nicolas Striebig
+
+Astropix2 Configbits
 """
 from bitstring import BitArray
 
@@ -17,8 +19,7 @@ class Asic(Nexysio):
 
         self._handle = handle
 
-        self.digitalconfig = {'interrupt_pushpull': 0,
-                              'ResetB Biasblock': 0}
+        self.digitalconfig = {'interrupt_pushpull': 0}
 
         i = 1
         while i < 19:
@@ -30,8 +31,10 @@ class Asic(Nexysio):
             self.digitalconfig[f'Extrabit{i}'] = 0
             i += 1
 
+        self.digitalconfig['ResetB'] = 0
+
         self.biasconfig = {
-            'q00': 0,
+            'DisHiDR': 0,
             'q01': 0,
             'qon0': 0,
             'qon1': 1,
@@ -42,8 +45,8 @@ class Asic(Nexysio):
         self.dacs = {
             'blres': 5,
             'nu1': 0,
-            'vn1': 2,
-            'vnfb': 5,
+            'vn1': 10,
+            'vnfb': 10,
             'vnfoll': 1,
             'nu5': 0,
             'nu6': 0,
@@ -52,41 +55,35 @@ class Asic(Nexysio):
             'vn2': 0,
             'vnfoll2': 5,
             'vnbias': 5,
-            'vpload': 1,
+            'vpload': 5,
             'nu13': 0,
-            'nu14': 0,
-            'nu15': 0,
+            'vncomp': 5,
+            'vpfoll': 5,
             'nu16': 0,
-            'nu17': 0,
-            'nu18': 0,
-            'nu19': 0,
-            'nu20': 0,
-            'nu21': 0,
-            'nu22': 0,
-            'nu23': 0,
-            'nu24': 0,
-            'nu25': 0,
-            'nu26': 0,
-            'nu27': 0,
-            'nu28': 0,
-            'vncomp': 0,
-            'nu30': 0,
-            'nu31': 0,
-            'nu32': 0,
-            'nu33': 0,
+            'vprec': 5,
+            'vnrec': 5
         }
 
+        self.recconfig = {'ColConfig0': 0b11000_00000_00000_00000_00000_00000_00000_001} #Why?
+
+        print(f'Col0 Config: {bin(self.recconfig["ColConfig0"])} \n')
+
+        i=1
+        while i < 35:
+            self.recconfig[f'ColConfig{i}'] = 0
+            i += 1
+
     @staticmethod
-    def __intto6bit(value: int) -> BitArray:
+    def __int2nbit(value: int, bits: int) -> BitArray:
         """Convert int to 6bit bitarray
 
         :param value: DAC value 0-63
         """
 
         try:
-            return BitArray(uint=value, length=6)
+            return BitArray(uint=value, length=bits)
         except ValueError:
-            print("Allowed Dacvalues 0 - 63")
+            print(f'Allowed Dacvalues 0 - {2**bits-1}')
 
     def gen_asic_vector(self, msbfirst: bool = False) -> BitArray:
         """Generate asic bitvector from digital, bias and dacconfig
@@ -103,19 +100,24 @@ class Asic(Nexysio):
             bitvector.append(BitArray(uint=value, length=1))
 
         for value in self.dacs.values():
-            bitvector.append(self.__intto6bit(value))
+            bitvector.append(self.__int2nbit(value, 6))
+
+        for value in self.recconfig.values():
+            bitvector.append(self.__int2nbit(value, 38))
 
         if not msbfirst:
             bitvector.reverse()
+
+        print(f'Bitvector: {bitvector} \n')
 
         return bitvector
 
     def update_asic(self) -> None:
         """Update ASIC"""
 
-        # Write 245 zeros
-        dummybits = self.gen_asic_pattern(BitArray(uint=0, length=245), True)
+        # Not needed for v2
+        #dummybits = self.gen_asic_pattern(BitArray(uint=0, length=245), True)
 
         # Write config
         asicbits = self.gen_asic_pattern(self.gen_asic_vector(), True)
-        self.write(dummybits + asicbits)
+        self.write(asicbits)
