@@ -5,12 +5,17 @@ Created on Tue Jul 12 20:07:13 2021
 
 @author: Nicolas Striebig
 """
+import binascii
+
+from bitstring import BitArray
+
 from time import sleep
 
-SPI_SR_CMD = 0x30
+SPI_SR_CMD = 0x60
 
-SPI_SR_SIN = 0x80
-SPI_SR_LD = 0xff
+SPI_SR_BIT0 = 0x00
+SPI_SR_BIT1 = 0x01
+SPI_SR_LOAD = 0x03
 
 SPI_CONFIG = 0x15
 SPI_CLKDIV = 0x16
@@ -74,7 +79,7 @@ class Spi:
 
         # data
         for bit in value:
-            sin = SPI_SR_SIN if bit == 1 else 0
+            sin = SPI_SR_BIT1 if bit == 1 else SPI_SR_BIT0
 
             data.extend([sin])
 
@@ -82,7 +87,7 @@ class Spi:
         i = 0
         if load:
             while i < 4:
-                data.extend([SPI_SR_LD])
+                data.extend([SPI_SR_LOAD])
                 i += 1
 
         return data
@@ -102,9 +107,10 @@ class Spi:
 
     def spi_enable(self, enable: bool = True):
         """
-        Enable SPI by setting reset bits low
+        Enable or disable SPI
 
-        Set SPI Reset bits to 0
+        Set SPI Reset bit to 0/1 active-low
+        :param enable: Enable
         """
         configregister = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
 
@@ -119,9 +125,9 @@ class Spi:
 
     def spi_reset(self):
         """
-        Reset SPI by setting reset bits low
+        Reset SPI
 
-        Set SPI Reset bits to 0
+        Resets SPI module and readFIFO
         """
 
         reset_bits = [0, 3]
@@ -152,13 +158,32 @@ class Spi:
 
         return self.read_register(SPI_READ_REG, num)
 
-    def write_spi(self, data: bytearray, buffersize=1023) -> None:
+    def read_spi_fifo(self):
+        """ Read Data from SPI FIFO until empty """
+
+        while not (int.from_bytes(self.read_register(21), 'big') & 16):
+            print(f'Read SPI: {binascii.hexlify(self.read_spi(8))}')
+
+    def write_spi(self, data: bytearray, MSBfirst: bool =True, buffersize: int =1023) -> None:
         """
         Write to Nexys SPI Write FIFO
 
         :param data: Bytearray vector
-        :param buffersize: BUffersize
+        :param buffersize: Buffersize
         """
+
+        if not MSBfirst:
+            element = bytearray()
+
+            for index, item in enumerate(data):
+
+                item_rev = BitArray(uint=item, length=8)
+                item_rev.reverse()
+
+                data[index] = item_rev.uint
+
+                # print(f'Item: {hex(item)} reverse: {hex(item_rev.int)}')
+
         waiting = True
         i = 0
         writebuffer = bytearray()
@@ -190,7 +215,7 @@ class Spi:
                 i += 1
                 counter -= 1
                 if (i % 5) == 4:
-                    print(f'Writebuffer: {writebuffer}\n')
+                    # print(f'Writebuffer: {binascii.hexlify(writebuffer)}\n')
                     self.direct_write_spi(bytes(writebuffer))
                     writebuffer = bytearray()
 
