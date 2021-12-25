@@ -127,7 +127,7 @@ class Nexysio(Spi):
             while (len(value) > 64000):
                 print("Split writevector in parts")
                 self._handle.write(value[0:63999])
-                value = value [64000:]
+                value = value[64000:]
 
             self._handle.write(value)
         except AttributeError:
@@ -199,7 +199,7 @@ class Nexysio(Spi):
         if flush:
             self.write(bytes(data))
 
-        print(f'Write Registers: {data}\n')
+        # print(f'Write Registers: {data}\n')
         return data
 
     def read_register(self, register: int, num: int = 1) -> bytes:
@@ -217,7 +217,7 @@ class Nexysio(Spi):
 
         self.write(bytes([READ_ADRESS, register, hbyte, lbyte]))
         answer = self.read(num)
-        print(f"Read Register {register} Value 0x{answer.hex()}")
+        # print(f"Read Register {register} Value 0x{answer.hex()}")
 
         return answer
 
