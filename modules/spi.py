@@ -164,7 +164,7 @@ class Spi:
         while not (int.from_bytes(self.read_register(21), 'big') & 16):
             print(f'Read SPI: {binascii.hexlify(self.read_spi(8))}')
 
-    def write_spi(self, data: bytearray, MSBfirst: bool =True, buffersize: int =1023) -> None:
+    def write_spi(self, data: bytearray, MSBfirst: bool = True, buffersize: int = 1023) -> None:
         """
         Write to Nexys SPI Write FIFO
 
@@ -173,7 +173,6 @@ class Spi:
         """
 
         if not MSBfirst:
-            element = bytearray()
 
             for index, item in enumerate(data):
 
