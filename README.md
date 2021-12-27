@@ -1,21 +1,19 @@
 # astropix-python
 
-Python based lightweight cross-platform tool for controlling the GECCO System.
+Python based lightweight cross-platform tool to control the GECCO System, based on [ATLASPix3_SoftAndFirmware](https://git.scc.kit.edu/jl1038/atlaspix3)
 
 To interact with the FTDI-Chip the ftd2xx package is used, which provides a wrapper around the proprietary D2XX driver.
 The free pyftdi driver currently does not support the synchronous 245 FIFO mode.  
 For bit manipulation the bitstring package is used.
 
 Features:
-* Write ASIC config (SR)
+* Write ASIC config (SR and SPI)
 * Configure Voltageboards (+offset cal)
 * Configure Injectionboard
 * Read/Write single registers
-* SPI Readout
+* SPI/QSPI Readout
 
 TODO:
-* QSPI Daisychain Readout
-* Write ASIC (SPI)
 * Chip config JSON import
 * (GUI)
 
@@ -68,3 +66,6 @@ Reload rules with:
 Create links to shared lib:
 
     sudo ldconfig
+
+### Mac
+See [FTDI Mac OS X Installation Guide](https://www.ftdichip.com/Support/Documents/InstallGuides/Mac_OS_X_Installation_Guide.pdf) D2XX Driver section from page 10.
