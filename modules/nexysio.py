@@ -11,19 +11,19 @@ import sys
 
 from modules.spi import Spi
 
-READ_ADRESS = 0x00
-WRITE_ADRESS = 0x01
+READ_ADRESS     = 0x00
+WRITE_ADRESS    = 0x01
 
-SR_ASIC_ADRESS = 0x00
+SR_ASIC_ADRESS  = 0x00
 
-SIN_ASIC = 0x04
-LD_ASIC = 0x08
+SIN_ASIC        = 0x04
+LD_ASIC         = 0x08
 
-SIN_GECCO = 0x02
-LD_GECCO = 0x04
+SIN_GECCO       = 0x02
+LD_GECCO        = 0x04
 
-NEXYS_USB_DESC = b'Digilent USB Device A'
-NEXYS_USB_SER = b'210276'
+NEXYS_USB_DESC  = b'Digilent USB Device A'
+NEXYS_USB_SER   = b'210276'
 
 
 class Nexysio(Spi):
@@ -49,7 +49,7 @@ class Nexysio(Spi):
         clkdiv = max(clkdiv, 1)
 
         for byte in value:
-            data.extend(bytearray([byte]) * clkdiv)
+            data.extend([byte] * clkdiv)
 
         return data
 
@@ -152,7 +152,7 @@ class Nexysio(Spi):
     def __setup(self) -> None:
         """Set FTDI USB connection settings"""
 
-        self._handle.setTimeouts(1000, 500)  # Timeout RX,TX
+        self._handle.setTimeouts(1000, 1000)  # Timeout RX,TX
         self._handle.setBitMode(0xFF, 0x00)  # Reset
         self._handle.setBitMode(0xFF, 0x40)  # Set Synchronous 245 FIFO Mode
         self._handle.setLatencyTimer(2)
@@ -194,7 +194,8 @@ class Nexysio(Spi):
         hbyte = length >> 8
         lbyte = length % 256
 
-        data = bytearray([WRITE_ADRESS, register, hbyte, lbyte]) + value
+        data = bytearray([WRITE_ADRESS, register, hbyte, lbyte])
+        data.extend(value)
 
         if flush:
             self.write(bytes(data))
