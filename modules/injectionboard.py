@@ -5,15 +5,21 @@ Created on Sun Jun 27 21:03:43 2021
 
 @author: Nicolas Striebig
 """
+
+import logging
+
 from modules.nexysio import Nexysio
+from modules.setup_logger import logger
 
-PG_RESET = 2
-PG_SUSPEND = 3
-PG_WRITE = 4
-PG_OUTPUT = 5
-PG_ADDRESS = 6
-PG_DATA = 7
+PG_RESET    = 2
+PG_SUSPEND  = 3
+PG_WRITE    = 4
+PG_OUTPUT   = 5
+PG_ADDRESS  = 6
+PG_DATA     = 7
 
+
+logger = logging.getLogger(__name__)
 
 class Injectionboard(Nexysio):
     """Sets injection setting for GECCO Injectionboard"""
@@ -33,6 +39,18 @@ class Injectionboard(Nexysio):
 
     def __patgensuspend(self, suspend: bool) -> bytes:
         return self.write_register(PG_SUSPEND, suspend)
+
+    def __patgen_write_register(self, pg_data: list, enum: bool = False):
+        data = bytearray()
+
+        if enum:
+            for index, register_val in enumerate(pg_data):
+                data.extend(self.write_register(index, register_val))
+        else:
+            for register in pg_data:
+                data.extend(self.write_register(register[0], register[1]))
+
+        return data
 
     @property
     def period(self) -> int:
@@ -89,11 +107,7 @@ class Injectionboard(Nexysio):
         if 0 <= pulsesperset <= 255:
             self._pulsesperset = pulsesperset
 
-    def __patgen(
-            self, period: int,
-            cycle: int,
-            clkdiv: int,
-            delay: int) -> bytearray:
+    def __patgen(self, period: int, cycle: int, clkdiv: int, delay: int) -> bytearray:
         """Generate vector for injectionpattern
 
         :param period: Set injection period 0-255
@@ -104,31 +118,21 @@ class Injectionboard(Nexysio):
         :returns: patgen vector
         """
 
-        data = bytearray()
-        timestamps = [1, 3, 0, 0, 0, 0, 0, 0]
+        """ Bytes:
+                0-7:    timestamps [1, 3, 0, 0, 0, 0, 0, 0]
+                8:      period
+                9:      flags 0b010100
+                10:     cycle MSB
+                11:     cycle LSB
+                12:     delay MSB
+                13:     delay LSB
+                14:     clkdiv MSB
+                15:     clkdiv LSB
+        """
 
-        for i, val in enumerate(timestamps):
-            data.extend(self.__patgenwrite(i, val))
+        pg_data = [1, 3, 0, 0, 0, 0, 0, 0, period, 0b010100, cycle >> 8, cycle % 256, delay >> 8, delay % 256, clkdiv >> 8, clkdiv % 256]
 
-        # Set period
-        data.extend(self.__patgenwrite(8, period))
-
-        # Set flags
-        data.extend(self.__patgenwrite(9, 0b010100))
-
-        # Set runlength
-        data.extend(self.__patgenwrite(10, cycle >> 8))
-        data.extend(self.__patgenwrite(11, cycle % 256))
-
-        # Set initial delay
-        data.extend(self.__patgenwrite(12, delay >> 8))
-        data.extend(self.__patgenwrite(13, delay % 256))
-
-        # Set clkdiv
-        data.extend(self.__patgenwrite(14, clkdiv >> 8))
-        data.extend(self.__patgenwrite(15, clkdiv % 256))
-
-        return data
+        return self.__patgen_write_register(pg_data, True)
 
     def __patgenwrite(self, address: int, value: int) -> bytearray:
         """Subfunction of patgen()
@@ -137,14 +141,9 @@ class Injectionboard(Nexysio):
         :param value: Value to append to writebuffer
         """
 
-        data = bytearray()
+        pg_data = [(PG_ADDRESS, address), (PG_DATA, value), (PG_WRITE, 1), (PG_WRITE, 0)]
 
-        data.extend(self.write_register(PG_ADDRESS, address))
-        data.extend(self.write_register(PG_DATA, value))
-        data.extend(self.write_register(PG_WRITE, 1))
-        data.extend(self.write_register(PG_WRITE, 0))
-
-        return data
+        return self.__patgen_write_register(pg_data)
 
     def __configureinjection(self) -> bytes:
         """
@@ -153,15 +152,14 @@ class Injectionboard(Nexysio):
         :returns: config vector
         """
 
-        print("\nWrite Injection Config\n===============================")
+        logger.info("\nWrite Injection Config\n===============================")
 
         output = self.write_register(PG_OUTPUT, 1)
-        patgenconfig = self.__patgen(
-            self.period, self.cycle, self.clkdiv, self.initdelay)
+        patgenconfig = self.__patgen(self.period, self.cycle, self.clkdiv, self.initdelay)
         pulses = self.__patgenwrite(7, self.pulsesperset)
 
         data = output + patgenconfig + pulses
-        print(f"Injection vector({len(data)} Bytes): 0x{data.hex()}\n")
+        logger.debug(f"Injection vector({len(data)} Bytes): 0x{data.hex()}\n")
 
         return bytes(data)
 
@@ -179,7 +177,8 @@ class Injectionboard(Nexysio):
         data.extend(self.__patgenreset(False))
         data.extend(self.__patgensuspend(False))
 
-        print(f"Start inj({len(data)} Bytes): 0x{data.hex()}\n")
+        logger.debug(f"Start inj({len(data)} Bytes): 0x{data.hex()}\n")
+
         return bytes(data)
 
     def __stop(self) -> bytes:
@@ -194,7 +193,8 @@ class Injectionboard(Nexysio):
         data.extend(self.__patgensuspend(True))
         data.extend(self.__patgenreset(True))
 
-        print(f"Stop inj({len(data)} Bytes): 0x{data.hex()}\n")
+        logger.debug(f"Stop inj({len(data)} Bytes): 0x{data.hex()}\n")
+
         return bytes(data)
 
     def update_inj(self) -> None:
@@ -218,7 +218,11 @@ class Injectionboard(Nexysio):
         # Start Injection
         self.write(self.__start())
 
+        logger.info("Start injection")
+
     def stop(self) -> None:
-        """Start injection"""
+        """Stop injection"""
 
         self.write(self.__stop())
+
+        logger.info("Stop injection")

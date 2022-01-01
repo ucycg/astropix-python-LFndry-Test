@@ -9,7 +9,11 @@ Created on Fri Jun 25 16:10:45 2021
 import ftd2xx as ftd
 import sys
 
+import logging
+import binascii
+
 from modules.spi import Spi
+from modules.setup_logger import logger
 
 READ_ADRESS     = 0x00
 WRITE_ADRESS    = 0x01
@@ -25,6 +29,7 @@ LD_GECCO        = 0x04
 NEXYS_USB_DESC  = b'Digilent USB Device A'
 NEXYS_USB_SER   = b'210276'
 
+logger = logging.getLogger(__name__)
 
 class Nexysio(Spi):
     """Interface to Nexys FTDI Chip"""
@@ -53,6 +58,14 @@ class Nexysio(Spi):
 
         return data
 
+    def debug_print(self, name: str, length: int, hbyte: int, lbyte: int, header: bytearray, value: bytearray):
+        logger.debug(
+            f"\nWrite {name}\n==============================="
+            f"Length: {length} hByte: {hbyte} lByte: {lbyte}\n"
+            f"Header: 0x{header.hex()}"
+            f"Data ({len(value)} Bits): 0b{value.bin}\n"
+        )
+
     def open(self, index: int):
         """
         Opens the FTDI device
@@ -75,7 +88,7 @@ class Nexysio(Spi):
                 raise NameError
 
         except NameError:
-            print(f'Unknown Device with index {index}')
+            logger.error(f'Unknown Device with index {index}')
             sys.exit(1)
 
         self.__setup()
@@ -96,7 +109,7 @@ class Nexysio(Spi):
             if device_serial is None:
                 raise TypeError
         except TypeError:
-            print('No Devices found')
+            logger.error('No Devices found')
             sys.exit(1)
 
         # iterate through list and open device, if found
@@ -106,8 +119,7 @@ class Nexysio(Spi):
                     self._handle = ftd.open(index)
                     self.__setup()
 
-                    print("\u001b[32mDigilent USB A opened\n \u001b[0m")
-
+                    logger.info("\u001b[32mDigilent USB A opened\n \u001b[0m")
                     # Return handle
                     return self._handle
 
@@ -125,13 +137,13 @@ class Nexysio(Spi):
         try:
             # split large vectors into multiple parts
             while (len(value) > 64000):
-                print("Split writevector in parts")
+                logger.debug("Split writevector in parts")
                 self._handle.write(value[0:63999])
                 value = value[64000:]
 
             self._handle.write(value)
         except AttributeError:
-            print('Nexys Write Error')
+            logger.error('Nexys Write Error')
 
     def read(self, num: int) -> bytes:
         """
@@ -142,7 +154,7 @@ class Nexysio(Spi):
         try:
             return self._handle.read(num)
         except AttributeError:
-            print('Nexys Read Error')
+            logger.error('Nexys Read Error')
 
     def close(self) -> None:
         """Close connection"""
@@ -169,7 +181,7 @@ class Nexysio(Spi):
 
         :returns: Bytestring with write header and data
         """
-        # print(f"Write Register {register} Value {hex(value)}")
+        logger.debug(f"Write Register {register} Value {hex(value)}")
 
         data = [WRITE_ADRESS, register, 0x00, 0x01, value]
 
@@ -188,7 +200,7 @@ class Nexysio(Spi):
 
         :returns: Bytestring with write header and 1 Byte data
         """
-        # print(f"Write Register {register} Value {hex(value)}")
+
         length = len(value)
 
         hbyte = length >> 8
@@ -200,7 +212,8 @@ class Nexysio(Spi):
         if flush:
             self.write(bytes(data))
 
-        # print(f'Write Registers: {data}\n')
+        logger.debug(f"Write Register {register} Value {value} Data: {binascii.hexlify(data)}")
+
         return data
 
     def read_register(self, register: int, num: int = 1) -> bytes:
@@ -218,7 +231,8 @@ class Nexysio(Spi):
 
         self.write(bytes([READ_ADRESS, register, hbyte, lbyte]))
         answer = self.read(num)
-        # print(f"Read Register {register} Value 0x{answer.hex()}")
+
+        logger.debug(f"Read Register {register} Value 0x{answer.hex()}")
 
         return answer
 
@@ -241,12 +255,9 @@ class Nexysio(Spi):
 
         header = bytearray([WRITE_ADRESS, address, hbyte, lbyte])
 
-        print("\nWrite GECCO Config\n===============================")
-        print(f"Length: {length} hByte: {hbyte} lByte: {lbyte}\n")
-        print(f"Header: 0x{header.hex()}")
-        print(f"Data ({len(value)} Bits): 0b{value.bin}\n")
+        self.debug_print("GECCO Config", length, hbyte, lbyte, header, value)
 
-        bit, data = 0, bytearray()
+        data = bytearray()
 
         # data
         for bit in value:
@@ -281,19 +292,16 @@ class Nexysio(Spi):
         # Number of Bytes to write
         length = (len(value) * 5 + 30) * clkdiv
 
-        print(f'Bytes to write: {length}\n')
+        logger.debug(f'Bytes to write: {length}\n')
 
         hbyte = length >> 8
         lbyte = length % 256
 
         header = bytearray([WRITE_ADRESS, SR_ASIC_ADRESS, hbyte, lbyte])
 
-        print("\nWrite Asic Config\n===============================")
-        print(f"Length: {length} hByte: {hbyte} lByte: {lbyte}\n")
-        print(f"Header: 0x{header.hex()}")
-        print(f"Data ({len(value)} Bits): 0b{value.bin}\n")
+        self.debug_print("ASIC Config", length, hbyte, lbyte, header, value)
 
-        bit, data, load = 0, bytearray(), bytearray()
+        data, load = bytearray(), bytearray()
 
         # data
         for bit in value:
