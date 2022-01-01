@@ -6,23 +6,36 @@ Created on Tue Jul 12 20:07:13 2021
 @author: Nicolas Striebig
 """
 import binascii
+import logging
+
+from tqdm import tqdm
 
 from bitstring import BitArray
 
 from time import sleep
 
-SPI_SR_CMD = 0x60
+from modules.setup_logger import logger
 
-SPI_SR_BIT0 = 0x00
-SPI_SR_BIT1 = 0x01
-SPI_SR_LOAD = 0x03
 
-SPI_CONFIG = 0x15
-SPI_CLKDIV = 0x16
+# SR
+SPI_SR_BROADCAST    = 0x7E
+SPI_SR_BIT0         = 0x00
+SPI_SR_BIT1         = 0x01
+SPI_SR_LOAD         = 0x03
+SPI_EMPTY_BYTE      = 0x00
 
-SPI_WRITE_REG = 23
-SPI_READ_REG = 24
+# Registers
+SPI_CONFIG_REG      = 0x15
+SPI_CLKDIV_REG      = 0x16
+SPI_WRITE_REG       = 0x17
+SPI_READ_REG        = 0x18
 
+# Daisychain 3bit Header + 5bit ID
+SPI_HEADER_EMPTY    = 0b001 << 5
+SPI_HEADER_ROUTING  = 0b010 << 5
+SPI_HEADER_SR       = 0b011 << 5
+
+logger = logging.getLogger(__name__)
 
 class Spi:
     """
@@ -45,9 +58,6 @@ class Spi:
     def __init__(self):
         self._spi_clkdiv = 16
 
-    def readout(self):
-        pass
-
     @staticmethod
     def set_bit(value, bit):
         return value | (1 << bit)
@@ -56,13 +66,19 @@ class Spi:
     def clear_bit(value, bit):
         return value & ~(1 << bit)
 
-    @staticmethod
-    def asic_spi_vector(value: bytearray, load: int) -> bytes:
+    def get_spi_config(self) -> int:
+        return int.from_bytes(self.read_register(SPI_CONFIG_REG), 'big')
+
+    def asic_spi_vector(self, value: bytearray, load: bool, n_load: int = 10, broadcast: bool = True, chipid: int = 0) -> bytearray:
         """
         Write ASIC config via SPI
 
         :param value: Bytearray vector
         :param load: Load signal
+        :param n_load: Length of load signal
+
+        :param broadcast: Enable Broadcast
+        :param chipid: Set chipid if !broadcast
 
         :returns: SPI ASIC config pattern
         """
@@ -70,25 +86,32 @@ class Spi:
         # Number of Bytes to write
         length = len(value) * 5 + 4
 
-        print("\n SPI Write Asic Config\n===============================")
-        print(f"Length: {length}\n")
-        print(f"Data ({len(value)} Bits): {value}\n")
+        logger.info("SPI Write Asic Config\n")
+        logger.debug(
+            "SPI Write Asic Config"
+            f"Length: {length}\n"
+            f"Data ({len(value)} Bits): {value}\n"
+        )
 
         # Write SPI SR Command to set MUX
-        data = bytearray([SPI_SR_CMD])
+        if broadcast:
+            data = bytearray([SPI_SR_BROADCAST])
+        else:
+            data = bytearray([SPI_HEADER_SR | chipid])
 
         # data
         for bit in value:
+
             sin = SPI_SR_BIT1 if bit == 1 else SPI_SR_BIT0
 
-            data.extend([sin])
+            data.append(sin)
 
-        # Load signal
-        i = 0
+        # Append Load signal and empty bytes
         if load:
-            while i < 4:
-                data.extend([SPI_SR_LOAD])
-                i += 1
+
+            data.extend([SPI_SR_LOAD] * n_load)
+
+            data.extend([SPI_EMPTY_BYTE] * n_load)
 
         return data
 
@@ -103,48 +126,45 @@ class Spi:
 
         if 0 <= clkdiv <= 65535:
             self._spi_clkdiv = clkdiv
-            self.write_register(SPI_CLKDIV, clkdiv, True)
+            self.write_register(SPI_CLKDIV_REG, clkdiv, True)
 
-    def spi_enable(self, enable: bool = True):
+    def spi_enable(self, enable: bool = True) -> None:
         """
         Enable or disable SPI
 
         Set SPI Reset bit to 0/1 active-low
         :param enable: Enable
         """
-        configregister = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
+        configregister = self.get_spi_config()
 
         # Set Reset bits 1
-        if enable:
-            configregister = self.clear_bit(configregister, 7)
-        else:
-            configregister = self.set_bit(configregister, 7)
+        configregister = self.clear_bit(configregister, 7) if enable else self.set_bit(configregister, 7)
 
-        print(f'Configregister: {hex(configregister)}')
-        self.write_register(SPI_CONFIG, configregister, True)
+        logger.debug(f'Configregister: {hex(configregister)}')
+        self.write_register(SPI_CONFIG_REG, configregister, True)
 
-    def spi_reset(self):
+    def spi_reset(self) -> None:
         """
         Reset SPI
 
-        Resets SPI module and readFIFO
+        Resets SPI module and FIFOs
         """
 
         reset_bits = [0, 3]
 
         for bit in reset_bits:
 
-            configregister = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
+            configregister = self.get_spi_config()
 
             # Set Reset bits 1
             configregister = self.set_bit(configregister, bit)
-            self.write_register(SPI_CONFIG, configregister, True)
+            self.write_register(SPI_CONFIG_REG, configregister, True)
 
-            configregister = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
+            configregister = self.get_spi_config()
 
             # Set Reset bits and readback bit 0
             configregister = self.clear_bit(configregister, bit)
-            self.write_register(SPI_CONFIG, configregister, True)
+            self.write_register(SPI_CONFIG_REG, configregister, True)
 
     def direct_write_spi(self, data: bytes) -> None:
         """
@@ -155,20 +175,86 @@ class Spi:
         self.write_registers(SPI_WRITE_REG, data, True)
 
     def read_spi(self, num: int):
+        """
+        Direct Read from SPI Read Register
+
+        :param num: Number of Bytes
+
+        :returns: SPI Read data
+        """
 
         return self.read_register(SPI_READ_REG, num)
 
-    def read_spi_fifo(self):
+    def read_spi_readoutmode(self):
+        """ Continous readout """
+        pass
+
+    def read_spi_fifo(self) -> bytearray:
         """ Read Data from SPI FIFO until empty """
 
-        while not (int.from_bytes(self.read_register(21), 'big') & 16):
-            print(f'Read SPI: {binascii.hexlify(self.read_spi(8))}')
+        idle_bytes = 0
+        count_hits = 0
+        idle_bytes_temp = 0
+
+        read_stream = bytearray()
+
+        while not (self.get_spi_config() & 16):
+            readbuffer = self.read_spi(8)
+
+            read_stream.extend(readbuffer)
+
+            if (readbuffer == b'\xaf\x2f\x2f\x2f\x2f\x2f\x2f\x2f') | (readbuffer == b'\x2f\x2f\x2f\x2f\x2f\x2f\x2f\x2f'):
+                idle_bytes += 1
+                idle_bytes_temp += 1
+                logger.debug(f'Read SPI: IDLE')
+            else:
+                count_hits += 1
+
+                if (idle_bytes_temp > 0):
+                    logger.debug(f'Read SPI: {idle_bytes_temp} IDLE Frames')
+                    idle_bytes_temp = 0
+
+                logger.debug(f'Read SPI: {binascii.hexlify(readbuffer)}')
+
+            sleep(0.01)
+
+        if idle_bytes > 0:
+            logger.info(f'Read SPI: {idle_bytes} IDLE Frames')
+
+        logger.info(f'Total {(idle_bytes+count_hits)*8}Bytes: Number of Frames with hits: {count_hits}')
+
+        return read_stream
+
+    def write_spi_bytes(self, n_bytes: int, delay: float = 0.01) -> None:
+        """
+        Write to SPI for readout
+
+        :param n_bytes: Number of Bytes
+        :param delay: delay between writes in s
+        """
+
+        if(n_bytes > 64000):
+            n_bytes = 64000
+            logger.warning("Cannot write more than 64000 Bytes")
+
+
+        logger.info(f"SPI: Write {8*n_bytes+4} Bytes")
+        self.write_spi(bytearray([SPI_HEADER_EMPTY]*n_bytes*8), False, 8191)
+
+    def send_routing_cmd(self) -> None:
+        """
+        Send routing cmd
+
+        """
+        logger.info(f"SPI: Send routing cmd")
+        self.write_spi(bytearray([SPI_HEADER_EMPTY, 0, 0, 0, 0, 0, 0, 0]), False)
 
     def write_spi(self, data: bytearray, MSBfirst: bool = True, buffersize: int = 1023) -> None:
         """
         Write to Nexys SPI Write FIFO
 
         :param data: Bytearray vector
+        :param MSBfirst: SPI MSB first
         :param buffersize: Buffersize
         """
 
@@ -181,7 +267,9 @@ class Spi:
 
                 data[index] = item_rev.uint
 
-                # print(f'Item: {hex(item)} reverse: {hex(item_rev.int)}')
+                #print(f'Item: {hex(item)} reverse: {bin(item_rev.int)}')
+
+        # print(f'SPIdata: {data}')
 
         waiting = True
         i = 0
@@ -196,32 +284,32 @@ class Spi:
         while waiting:
 
             # Convert Hex string to int
-            result = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
+            result = self.get_spi_config()
 
             # Wait until WrFIFO empty
             if result & compare_empty:
                 waiting = False
-            else:
-                sleep(0.005)
+            #else:
+            #    sleep(0.001)
 
         while i < len(data):
 
             if counter > 0:
                 # print(f'print data[i]:{data[i]}\n')
 
-                writebuffer += bytearray([data[i]])
+                writebuffer = bytearray(data[i:(i+16)])
 
-                i += 1
+                i += 16
                 counter -= 1
-                if (i % 5) == 4:
-                    # print(f'Writebuffer: {binascii.hexlify(writebuffer)}\n')
-                    self.direct_write_spi(bytes(writebuffer))
-                    writebuffer = bytearray()
+
+                self.direct_write_spi(bytes(writebuffer))
 
             else:
-                result = int.from_bytes(self.read_register(SPI_CONFIG), 'big')
+                result = self.get_spi_config()
 
                 if result & compare_empty:
                     counter = buffersize / 3
                 elif not result & compare_full:
                     counter = 1
+
+        # print(f'Write to spi i:{i}\n')
