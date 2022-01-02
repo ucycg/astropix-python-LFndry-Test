@@ -8,8 +8,14 @@ Created on Fri Jun 25 16:28:27 2021
 Astropix2 Configbits
 """
 from bitstring import BitArray
+from dataclasses import dataclass
 
 from modules.nexysio import Nexysio
+
+@dataclass
+class Astropix2Config:
+    # TODO Improvement: Move Configbits to dedicated dataclass
+    pass
 
 
 class Asic(Nexysio):
@@ -19,7 +25,7 @@ class Asic(Nexysio):
 
         self._handle = handle
 
-        self.digitalconfig = {'interrupt_pushpull': 0}
+        self.digitalconfig = {'interrupt_pushpull': 1}
 
         i = 1
         while i < 19:
@@ -43,40 +49,34 @@ class Asic(Nexysio):
         }
 
         self.dacs = {
-            'blres': 5,
+            'blres': 10,
             'nu1': 0,
-            'vn1': 5,
+            'vn1': 10,
             'vnfb': 10,
-            'vnfoll': 1,
+            'vnfoll': 2,
             'nu5': 0,
             'nu6': 0,
             'nu7': 0,
             'nu8': 0,
             'vn2': 0,
             'vnfoll2': 10,
-            'vnbias': 20,
-            'vpload': 1,
+            'vnbias': 10,
+            'vpload': 2,
             'nu13': 0,
-            'vncomp': 5,
+            'vncomp': 20,
             'vpfoll': 20,
             'nu16': 0,
-            'vprec': 5,
-            'vnrec': 5
+            'vprec': 30,
+            'vnrec': 30
         }
 
-        self.recconfig = {'ColConfig0': 0b000_00000_00000_00000_00000_00000_00000_00000}
-        self.recconfig['ColConfig1'] = 0b110_00000_00000_00000_00000_00000_00000_00001
-        self.recconfig['ColConfig2'] = 0b000_00000_00000_00000_00000_00000_00000_00000
-        self.recconfig['ColConfig3'] = 0b000_00000_00000_00000_00000_00000_00000_00000
-        self.recconfig['ColConfig4'] = 0b000_00000_00000_00000_00000_00000_00000_00000
-        self.recconfig['ColConfig5'] = 0b000_00000_00000_00000_00000_00000_00000_00000
+        self.recconfig = {'ColConfig0': 0b111_11111_11111_11111_11111_11111_11111_11101}
+        #self.recconfig = {'ColConfig0': 0b110_00000_00000_00000_00000_00000_00000_00001}
 
-        i = 6
-        while i < 34:
-            self.recconfig[f'ColConfig{i}'] = 0
+        i = 1
+        while i < 35:
+            self.recconfig[f'ColConfig{i}'] = 0b001_11111_11111_11111_11111_11111_11111_11110
             i += 1
-
-        self.recconfig['ColConfig34'] = 0b000_00000_00000_00000_00000_00000_00000_00000
 
     @staticmethod
     def __int2nbit(value: int, nbits: int) -> BitArray:
@@ -88,7 +88,7 @@ class Asic(Nexysio):
         try:
             return BitArray(uint=value, length=nbits)
         except ValueError:
-            print(f'Allowed Dacvalues 0 - {2**nbits-1}')
+            print(f'Allowed Values 0 - {2**nbits-1}')
 
     def gen_asic_vector(self, msbfirst: bool = False) -> BitArray:
         """Generate asic bitvector from digital, bias and dacconfig
