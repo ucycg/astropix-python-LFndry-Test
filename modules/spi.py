@@ -37,6 +37,7 @@ SPI_HEADER_SR       = 0b011 << 5
 
 logger = logging.getLogger(__name__)
 
+
 class Spi:
     """
     Nexys SPI Communication
@@ -206,7 +207,7 @@ class Spi:
             if (readbuffer == b'\xaf\x2f\x2f\x2f\x2f\x2f\x2f\x2f') | (readbuffer == b'\x2f\x2f\x2f\x2f\x2f\x2f\x2f\x2f'):
                 idle_bytes += 1
                 idle_bytes_temp += 1
-                logger.debug(f'Read SPI: IDLE')
+                logger.debug('Read SPI: IDLE')
             else:
                 count_hits += 1
 
@@ -238,7 +239,7 @@ class Spi:
             logger.warning("Cannot write more than 64000 Bytes")
 
 
-        logger.info(f"SPI: Write {8*n_bytes+4} Bytes")
+        logger.info(f"SPI: Write {8 * n_bytes + 4} Bytes")
         self.write_spi(bytearray([SPI_HEADER_EMPTY]*n_bytes*8), False, 8191)
 
     def send_routing_cmd(self) -> None:
@@ -246,7 +247,7 @@ class Spi:
         Send routing cmd
 
         """
-        logger.info(f"SPI: Send routing cmd")
+        logger.info("SPI: Send routing cmd")
         self.write_spi(bytearray([SPI_HEADER_EMPTY, 0, 0, 0, 0, 0, 0, 0]), False)
 
     def write_spi(self, data: bytearray, MSBfirst: bool = True, buffersize: int = 1023) -> None:
@@ -267,13 +268,10 @@ class Spi:
 
                 data[index] = item_rev.uint
 
-                #print(f'Item: {hex(item)} reverse: {bin(item_rev.int)}')
-
-        # print(f'SPIdata: {data}')
+        logger.debug(f'SPIdata: {data}')
 
         waiting = True
         i = 0
-        writebuffer = bytearray()
         counter = buffersize / 3
 
         # WrFIFO bit positons in spi_config register 0x21
@@ -289,15 +287,11 @@ class Spi:
             # Wait until WrFIFO empty
             if result & compare_empty:
                 waiting = False
-            #else:
-            #    sleep(0.001)
 
         while i < len(data):
 
             if counter > 0:
-                # print(f'print data[i]:{data[i]}\n')
-
-                writebuffer = bytearray(data[i:(i+16)])
+                writebuffer = bytearray(data[i:(i + 16)])
 
                 i += 16
                 counter -= 1
@@ -311,5 +305,3 @@ class Spi:
                     counter = buffersize / 3
                 elif not result & compare_full:
                     counter = 1
-
-        # print(f'Write to spi i:{i}\n')
