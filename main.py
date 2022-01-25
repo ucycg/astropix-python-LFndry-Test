@@ -48,7 +48,7 @@ def main():
 
     # Configure 8 DAC Voltageboard in Slot 4 with list values
     # 3 = Vcasc2, 4=BL, 7=Vminuspix, 8=Thpix
-    vboard1 = Voltageboard(handle, 4, (8, [0, 0, 1.1, 1, 0, 0, 1.0, 1.1]))
+    vboard1 = Voltageboard(handle, 4, (8, [0, 0, 1.1, 1, 0, 0, 1, 1.1]))
 
     # Set measured 1V for one-point calibration
     vboard1.vcal = 0.989
@@ -65,7 +65,7 @@ def main():
     #
 
     # Set Injection level
-    injvoltage = Voltageboard(handle, 3, (2, [0.15, 0.0]))
+    injvoltage = Voltageboard(handle, 3, (2, [0.3, 0.0]))
     injvoltage.vcal = vboard1.vcal
     injvoltage.update_vb()
 
@@ -109,15 +109,18 @@ def main():
 
     wait_progress(3)
 
-    # Write 8*4000 Bytes to MOSI
+    # Write 8*1000 Bytes to MOSI
     nexys.write_spi_bytes(1000)
 
     # Read (Width 8 Bytes) until read FIFO is empty
     readout = nexys.read_spi_fifo()
+
     print(binascii.hexlify(readout))
 
     decode = Decode()
-    decode.hits_from_readoutstream(readout)
+    list_hits = decode.hits_from_readoutstream(readout)
+
+    decode.decode_astropix2_hits(list_hits)
 
     # inj.stop()
 
