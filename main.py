@@ -52,6 +52,7 @@ def main():
 
     # Set measured 1V for one-point calibration
     vboard1.vcal = 0.989
+    vboard1.vsupply = 2.7
 
     # Update voltageboards
     vboard1.update_vb()
@@ -67,6 +68,7 @@ def main():
     # Set Injection level
     injvoltage = Voltageboard(handle, 3, (2, [0.3, 0.0]))
     injvoltage.vcal = vboard1.vcal
+    injvoltage.vsupply = vboard1.vsupply
     injvoltage.update_vb()
 
     inj = Injectionboard(handle)

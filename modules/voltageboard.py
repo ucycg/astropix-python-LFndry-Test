@@ -21,6 +21,7 @@ class Voltageboard(Nexysio):
         self._dacvalues = []  # dacvalues
 
         self._vcal = 1.0
+        self._vsupply = 3.3
 
         self.pos = pos
         self.dacvalues = dacvalues
@@ -41,7 +42,7 @@ class Voltageboard(Nexysio):
 
         for vdac in dacs:
 
-            dacvalue = int(vdac * 16383 / 3.3 / self.vcal)
+            dacvalue = int(vdac * 16383 / self.vsupply / self.vcal)
 
             vdacbits.append(BitArray(uint=dacvalue, length=14))
             vdacbits.append(BitArray(uint=0, length=2))
@@ -62,6 +63,19 @@ class Voltageboard(Nexysio):
     def vcal(self, voltage: float) -> None:
         if 0.9 <= voltage <= 1.1:
             self._vcal = voltage
+
+    @property
+    def vsupply(self) -> float:
+        """Voltage supply voltage
+
+        Set voltageboard supply voltage
+        """
+        return self._vsupply
+
+    @vsupply.setter
+    def vsupply(self, voltage: float) -> None:
+        if 2.7 <= voltage <= 3.3:
+            self._vsupply = voltage
 
     @property
     def dacvalues(self) -> list[float]:
