@@ -49,26 +49,48 @@ class Asic(Nexysio):
         }
 
         self.dacs = {
-            'blres': 10,
+            'blres': 0,
             'nu1': 0,
-            'vn1': 10,
-            'vnfb': 10,
-            'vnfoll': 2,
+            'vn1': 20,
+            'vnfb': 1,
+            'vnfoll': 10,
             'nu5': 0,
             'nu6': 0,
             'nu7': 0,
             'nu8': 0,
             'vn2': 0,
-            'vnfoll2': 10,
-            'vnbias': 10,
-            'vpload': 2,
+            'vnfoll2': 1,
+            'vnbias': 0,
+            'vpload': 5,
             'nu13': 0,
-            'vncomp': 20,
-            'vpfoll': 20,
+            'vncomp': 2,
+            'vpfoll': 60,
             'nu16': 0,
             'vprec': 30,
             'vnrec': 30
         }
+
+        # self.dacs = {
+        #     'blres': 10,
+        #     'nu1': 0,
+        #     'vn1': 10,
+        #     'vnfb': 10,
+        #     'vnfoll': 2,
+        #     'nu5': 0,
+        #     'nu6': 0,
+        #     'nu7': 0,
+        #     'nu8': 0,
+        #     'vn2': 0,
+        #     'vnfoll2': 10,
+        #     'vnbias': 10,
+        #     'vpload': 2,
+        #     'nu13': 0,
+        #     'vncomp': 20,
+        #     'vpfoll': 20,
+        #     'nu16': 0,
+        #     'vprec': 30,
+        #     'vnrec': 30
+        # }
 
         self.recconfig = {'ColConfig0': 0b111_11111_11111_11111_11111_11111_11111_11101}
         #self.recconfig = {'ColConfig0': 0b110_00000_00000_00000_00000_00000_00000_00001}
