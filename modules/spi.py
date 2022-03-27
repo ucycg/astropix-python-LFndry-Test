@@ -8,7 +8,7 @@ Created on Tue Jul 12 20:07:13 2021
 import binascii
 import logging
 
-from tqdm import tqdm
+# from tqdm import tqdm
 
 from bitstring import BitArray
 
@@ -29,6 +29,8 @@ SPI_CONFIG_REG      = 0x15
 SPI_CLKDIV_REG      = 0x16
 SPI_WRITE_REG       = 0x17
 SPI_READ_REG        = 0x18
+SPI_READBACK_REG    = 0x3C
+SPI_READBACK_REG_CONF = 0x3D
 
 # Daisychain 3bit Header + 5bit ID
 SPI_HEADER_EMPTY    = 0b001 << 5
@@ -69,6 +71,9 @@ class Spi:
 
     def get_spi_config(self) -> int:
         return int.from_bytes(self.read_register(SPI_CONFIG_REG), 'big')
+
+    def get_sr_readback_config(self) -> int:
+        return int.from_bytes(self.read_register(SPI_READBACK_REG_CONF), 'big')
 
     def asic_spi_vector(self, value: bytearray, load: bool, n_load: int = 10, broadcast: bool = True, chipid: int = 0) -> bytearray:
         """
@@ -167,6 +172,29 @@ class Spi:
             configregister = self.clear_bit(configregister, bit)
             self.write_register(SPI_CONFIG_REG, configregister, True)
 
+    def sr_readback_reset(self) -> None:
+        """
+        Reset SPI
+
+        Resets SPI module and FIFOs
+        """
+
+        reset_bits = [0]
+
+        for bit in reset_bits:
+
+            configregister = self.get_sr_readback_config()
+
+            # Set Reset bits 1
+            configregister = self.set_bit(configregister, bit)
+            self.write_register(SPI_READBACK_REG_CONF, configregister, True)
+
+            configregister = self.get_sr_readback_config()
+
+            # Set Reset bits and readback bit 0
+            configregister = self.clear_bit(configregister, bit)
+            self.write_register(SPI_READBACK_REG_CONF, configregister, True)
+
     def direct_write_spi(self, data: bytes) -> None:
         """
         Direct write to SPI Write Register
@@ -186,6 +214,17 @@ class Spi:
 
         return self.read_register(SPI_READ_REG, num)
 
+    def read_spi_readback(self, num: int):
+        """
+        Direct Read from SPI Read Register
+
+        :param num: Number of Bytes
+
+        :returns: SPI Read data
+        """
+
+        return self.read_register(SPI_READBACK_REG, num)
+
     def read_spi_readoutmode(self):
         """ Continous readout """
         pass
@@ -198,8 +237,9 @@ class Spi:
         idle_bytes_temp = 0
 
         read_stream = bytearray()
+        i=0
 
-        while not (self.get_spi_config() & 16):
+        while not(self.get_spi_config() & 16):
             readbuffer = self.read_spi(8)
 
             read_stream.extend(readbuffer)
@@ -226,21 +266,57 @@ class Spi:
 
         return read_stream
 
-    def write_spi_bytes(self, n_bytes: int, delay: float = 0.01) -> None:
+    def read_spi_fifo_readback(self) -> bytearray:
+        """ Read Data from SPI FIFO until empty """
+
+        idle_bytes = 0
+        count_hits = 0
+        idle_bytes_temp = 0
+
+        read_stream = bytearray()
+        i=0
+
+
+        while not(self.get_sr_readback_config() & 16):
+            readbuffer = self.read_spi_readback(8)
+
+            read_stream.extend(readbuffer)
+
+            # if (readbuffer == b'\xaf\x2f\x2f\x2f\x2f\x2f\x2f\x2f') | (readbuffer == b'\x2f\x2f\x2f\x2f\x2f\x2f\x2f\x2f'):
+            #     idle_bytes += 1
+            #     idle_bytes_temp += 1
+            #     logger.debug('Read SPI: IDLE')
+            # else:
+            #     count_hits += 1
+
+            #     if (idle_bytes_temp > 0):
+            #         logger.debug(f'Read SPI: {idle_bytes_temp} IDLE Frames')
+            #         idle_bytes_temp = 0
+
+            #     logger.debug(f'Read SPI: {binascii.hexlify(readbuffer)}')
+
+            sleep(0.01)
+
+        if idle_bytes > 0:
+            logger.info(f'Read SPI: {idle_bytes} IDLE Frames')
+
+        logger.info(f'Total {(idle_bytes+count_hits)*8}Bytes: Number of Frames with hits: {count_hits}')
+
+        return read_stream
+
+    def write_spi_bytes(self, n_bytes: int) -> None:
         """
         Write to SPI for readout
 
         :param n_bytes: Number of Bytes
-        :param delay: delay between writes in s
         """
 
         if(n_bytes > 64000):
             n_bytes = 64000
             logger.warning("Cannot write more than 64000 Bytes")
 
-
         logger.info(f"SPI: Write {8 * n_bytes + 4} Bytes")
-        self.write_spi(bytearray([SPI_HEADER_EMPTY]*n_bytes*8), False, 8191)
+        self.write_spi(bytearray([SPI_HEADER_EMPTY] * n_bytes * 8), False, 8191)
 
     def send_routing_cmd(self) -> None:
         """

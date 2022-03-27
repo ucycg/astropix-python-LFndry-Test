@@ -31,6 +31,7 @@ NEXYS_USB_SER   = b'210276'
 
 logger = logging.getLogger(__name__)
 
+
 class Nexysio(Spi):
     """Interface to Nexys FTDI Chip"""
 
@@ -278,7 +279,7 @@ class Nexysio(Spi):
         # concatenate header+dataasic
         return b''.join([header, data])
 
-    def gen_asic_pattern(self, value: bytearray, wload: bool, clkdiv: int = 8) -> bytes:
+    def gen_asic_pattern(self, value: bytearray, wload: bool, clkdiv: int = 8, readback_mode = False) -> bytes:
         """
         Generate ASIC SR write pattern from bitvector
 
@@ -290,7 +291,11 @@ class Nexysio(Spi):
         """
 
         # Number of Bytes to write
-        length = (len(value) * 5 + 30) * clkdiv
+        
+        if not(readback_mode):
+            length = (len(value) * 5 + 30) * clkdiv
+        else:
+            length = ((len(value)+1) * 5) * clkdiv
 
         logger.debug(f'Bytes to write: {length}\n')
 
@@ -303,19 +308,28 @@ class Nexysio(Spi):
 
         data, load = bytearray(), bytearray()
 
+        if not(readback_mode):
         # data
-        for bit in value:
-            pattern = SIN_ASIC if bit == 1 else 0
+            for bit in value:
+                pattern = SIN_ASIC if bit == 1 else 0
+                # Generate double clocked pattern
+                #data.extend([pattern, pattern | 1, pattern, pattern | 2, pattern])
+                data.extend([pattern, pattern | 1, pattern, pattern | 2, pattern])
 
-            # Generate double clocked pattern
-            data.extend([pattern, pattern | 1, pattern, pattern | 2, pattern])
 
-        # Load signal
-        if wload:
-            load.extend([0x00, LD_ASIC, 0x00])
+            # Load signal
+            if wload:
+                load.extend([0x00, LD_ASIC, 0x00])
 
-        data = self.__addbytes(data, clkdiv)
-        data.extend(self.__addbytes(load, clkdiv * 10))
+            data = self.__addbytes(data, clkdiv)
+            data.extend(self.__addbytes(load, clkdiv * 10))
+
+        else:
+            data.extend([4 | 32, 4 | 33, 4|32, 4 | 34, 4|32])
+            for bit in value:
+                #data.extend([4 | 32, 4 | 33, 4, 4 | 2, 4])
+                data.extend([4 , 4 | 1, 4, 4 | 2, 4])
+            data = self.__addbytes(data, clkdiv)
 
         # concatenate header+data
         return b''.join([header, data])

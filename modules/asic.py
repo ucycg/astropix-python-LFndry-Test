@@ -35,6 +35,9 @@ class Asic(Nexysio):
         self.digitalconfig['ResetB'] = 0
 
         i = 0
+        while i < 8:
+            self.digitalconfig[f'Extrabit{i}'] = 1
+            i += 1
         while i < 15:
             self.digitalconfig[f'Extrabit{i}'] = 0
             i += 1
@@ -147,4 +150,9 @@ class Asic(Nexysio):
 
         # Write config
         asicbits = self.gen_asic_pattern(self.gen_asic_vector(), True)
+        self.write(asicbits)
+
+    def readback_asic(self):
+        asicbits = self.gen_asic_pattern(self.gen_asic_vector(), True, readback_mode = True)
+        print(asicbits)
         self.write(asicbits)
