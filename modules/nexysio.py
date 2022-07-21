@@ -8,6 +8,7 @@ Created on Fri Jun 25 16:10:45 2021
 """
 import ftd2xx as ftd
 import sys
+import time
 
 import logging
 import binascii
@@ -333,3 +334,20 @@ class Nexysio(Spi):
 
         # concatenate header+data
         return b''.join([header, data])
+    
+    def get_configregister(self):
+        return int.from_bytes(self.read_register(0), 'big')
+    
+    def chip_reset(self) -> None:
+        """
+        Reset SPI
+        Set res_n to 0 and back to 1 after short sleep
+        res_n is connected to FTDI Reg: 0 Bit: 4
+        """
+        # Set Reset bits 1
+        configregister = self.set_bit(self.get_configregister(), 4)
+        self.write_register(0, configregister, True)
+        time.sleep(.1)
+        # Set Reset bits and readback bit 0
+        configregister = self.clear_bit(self.get_configregister(), 4)
+        self.write_register(0, configregister, True)
