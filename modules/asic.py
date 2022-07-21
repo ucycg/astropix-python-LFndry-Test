@@ -120,7 +120,7 @@ class Asic(Nexysio):
     def enable_ampout_col(self, col: int):
         self.recconfig[f'ColConfig{col}'] = self.recconfig.get(f'ColConfig{col}', 0b001_11111_11111_11111_11111_11111_11111_11110) | 0b100_00000_00000_00000_00000_00000_00000_00000
 
-        for i in range(self.get_num_cols):
+        for i in range(self.get_num_cols()):
             if not i == col:
                 self.recconfig[f'ColConfig{i}'] = self.recconfig.get(f'ColConfig{col}') & 0b011_11111_11111_11111_11111_11111_11111_11111
 
