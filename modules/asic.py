@@ -61,8 +61,8 @@ class Asic(Nexysio):
 
         :param col: Col number
         """
-        for _ in range(self.get_num_cols()):
-            self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'][f'col{col}'][1] & 0b011_11111_11111_11111_00000_11111_11111_11111
+        for i in range(self.get_num_cols()):
+            self.asic_config['recconfig'][f'col{i}'][1] = self.asic_config['recconfig'][f'col{i}'][1] & 0b011_11111_11111_11111_11111_11111_11111_11111
 
         self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'][f'col{col}'][1] | 0b100_00000_00000_00000_00000_00000_00000_00000
 
