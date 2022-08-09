@@ -117,7 +117,7 @@ class Asic(Nexysio):
 
             for i in range(self.get_num_cols()):
                 if not i == col:
-                    self.recconfig[f'ColConfig{i}'] = self.recconfig.get(f'ColConfig{col}') & 0b011_11111_11111_11111_11111_11111_11111_11111
+                    self.recconfig[f'ColConfig{i}'] = self.recconfig.get(f'ColConfig{i}', 0b001_11111_11111_11111_11111_11111_11111_11110) & 0b011_11111_11111_11111_11111_11111_11111_11111
 
     def enable_pixel(self, col: int, row: int):
         """Enable pixel comparator for specified pixel
