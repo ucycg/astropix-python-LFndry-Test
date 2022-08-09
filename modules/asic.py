@@ -7,6 +7,8 @@ Created on Fri Jun 25 16:28:27 2021
 
 Astropix2 Configbits
 """
+import yaml
+
 from bitstring import BitArray
 from dataclasses import dataclass
 
@@ -22,60 +24,7 @@ class Asic(Nexysio):
         self._num_rows = 35
         self._num_cols = 35
 
-        self.digitalconfig = {'interrupt_pushpull': 1}
-
-        i = 1
-        while i < 19:
-            self.digitalconfig[f'En_Inj{i}'] = 0
-            i += 1
-
-        self.digitalconfig['Reset'] = 0
-
-        i = 0
-        while i < 8:
-            self.digitalconfig[f'Extrabit{i}'] = 1
-            i += 1
-        while i < 15:
-            self.digitalconfig[f'Extrabit{i}'] = 0
-            i += 1
-
-        self.biasconfig = {
-            'DisHiDR': 0,
-            'q01': 0,
-            'qon0': 0,
-            'qon1': 1,
-            'qon2': 0,
-            'qon3': 1,
-        }
-
-        self.dacs = {
-            'blres': 0,
-            'nu1': 0,
-            'vn1': 20,
-            'vnfb': 1,
-            'vnfoll': 10,
-            'nu5': 0,
-            'nu6': 0,
-            'nu7': 0,
-            'nu8': 0,
-            'vn2': 0,
-            'vnfoll2': 1,
-            'vnbias': 0,
-            'vpload': 5,
-            'nu13': 0,
-            'vncomp': 2,
-            'vpfoll': 60,
-            'nu16': 0,
-            'vprec': 60,
-            'vnrec': 30
-        }
-
-        self.recconfig = {'ColConfig0': 0b001_11111_11111_11111_11111_11111_11111_11110}
-
-        i = 1
-        while i < self._num_cols:
-            self.recconfig[f'ColConfig{i}'] = 0b001_11111_11111_11111_11111_11111_11111_11110
-            i += 1
+        self.asic_config = None
 
     def get_num_cols(self):
         """Get number of columns
@@ -97,7 +46,7 @@ class Asic(Nexysio):
         :param row: Row number
         """
         if(row < self._num_rows):
-            self.recconfig[f'ColConfig{row}'] = self.recconfig.get(f'ColConfig{row}', 0b001_11111_11111_11111_11111_11111_11111_11110) | 0b000_00000_00000_00000_00000_00000_00000_00001
+            self.asic_config['recconfig'][f'col{row}'][1] = self.asic_config['recconfig'].get(f'col{row}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | 0b000_00000_00000_00000_00000_00000_00000_00001
 
     def enable_inj_col(self, col: int):
         """Enable col injection switch
@@ -105,19 +54,17 @@ class Asic(Nexysio):
         :param col: Col number
         """
         if(col < self._num_cols):
-            self.recconfig[f'ColConfig{col}'] = self.recconfig.get(f'ColConfig{col}', 0b001_11111_11111_11111_11111_11111_11111_11110) | 0b010_00000_00000_00000_00000_00000_00000_00000
+            self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | 0b010_00000_00000_00000_00000_00000_00000_00000
 
     def enable_ampout_col(self, col: int):
         """Select Col for analog mux and disable other cols
 
         :param col: Col number
         """
-        if(col < self._num_cols):
-            self.recconfig[f'ColConfig{col}'] = self.recconfig.get(f'ColConfig{col}', 0b001_11111_11111_11111_11111_11111_11111_11110) | 0b100_00000_00000_00000_00000_00000_00000_00000
+        for _ in range(self.get_num_cols()):
+            self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'][f'col{col}'][1] & 0b011_11111_11111_11111_00000_11111_11111_11111
 
-            for i in range(self.get_num_cols()):
-                if not i == col:
-                    self.recconfig[f'ColConfig{i}'] = self.recconfig.get(f'ColConfig{col}') & 0b011_11111_11111_11111_11111_11111_11111_11111
+        self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'][f'col{col}'][1] | 0b100_00000_00000_00000_00000_00000_00000_00000
 
     def enable_pixel(self, col: int, row: int):
         """Enable pixel comparator for specified pixel
@@ -126,7 +73,7 @@ class Asic(Nexysio):
         :param row: Row number
         """
         if(row < self._num_rows and col < self._num_cols):
-            self.recconfig[f'ColConfig{col}'] = self.recconfig.get(f'ColConfig{col}', 0b001_11111_11111_11111_11111_11111_11111_11110) & ~(2 << row)
+            self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & ~(2 << row)
 
     def disable_pixel(self, col: int, row: int):
         """Disable pixel comparator for specified pixel
@@ -135,7 +82,7 @@ class Asic(Nexysio):
         :param row: Row number
         """
         if(row < self._num_rows and col < self._num_cols):
-            self.recconfig[f'ColConfig{col}'] = self.recconfig.get(f'ColConfig{col}', 0b001_11111_11111_11111_11111_11111_11111_11110) | (2 << row)
+            self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | (2 << row)
 
     def disable_inj_row(self, row: int):
         """Disable row injection switch
@@ -143,7 +90,7 @@ class Asic(Nexysio):
         :param row: Row number
         """
         if(row < self._num_rows):
-            self.recconfig[f'ColConfig{row}'] = self.recconfig.get(f'ColConfig{row}', 0b001_11111_11111_11111_11111_11111_11111_11110) & 0b111_11111_11111_11111_11111_11111_11111_11110
+            self.asic_config['recconfig'][f'col{row}'][1] = self.asic_config['recconfig'].get(f'col{row}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & 0b111_11111_11111_11111_11111_11111_11111_11110
 
     def disable_inj_col(self, col: int):
         """Disable col injection switch
@@ -151,7 +98,7 @@ class Asic(Nexysio):
         :param col: Col number
         """
         if(col < self._num_cols):
-            self.recconfig[f'ColConfig{col}'] = self.recconfig.get(f'ColConfig{col}', 0b001_11111_11111_11111_11111_11111_11111_11110) & 0b101_11111_11111_11111_11111_11111_11111_11111
+            self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & 0b101_11111_11111_11111_11111_11111_11111_11111
 
     def get_pixel(self, col: int, row: int):
         """Check if Pixel is enabled
@@ -160,7 +107,7 @@ class Asic(Nexysio):
         :param row: Row number
         """
         if(row < self._num_rows):
-            if( self.recconfig.get(f'ColConfig{col}') & (1<<(row+1))):
+            if( self.asic_config['recconfig'].get(f'col{col}')[1] & (1<<(row+1))):
                 return False
             else:
                 return True
@@ -168,10 +115,8 @@ class Asic(Nexysio):
     def reset_recconfig(self):
         """Reset recconfig by disabling all pixels and disabling all injection switches and mux ouputs
         """
-        i = 0
-        while i < self._num_cols:
-            self.recconfig[f'ColConfig{i}'] = 0b001_11111_11111_11111_11111_11111_11111_11110
-            i += 1
+        for key in self.asic_config['recconfig']:
+            self.asic_config['recconfig'][key][1] = 0b001_11111_11111_11111_11111_11111_11111_11110
 
     @staticmethod
     def __int2nbit(value: int, nbits: int) -> BitArray:
@@ -188,6 +133,20 @@ class Asic(Nexysio):
         except ValueError:
             print(f'Allowed Values 0 - {2**nbits-1}')
 
+    def load_conf_from_yaml(self, chipversion: int, filename: str):
+        """Load ASIC config from yaml
+
+
+        :param filename: Name of yml file in config folder
+        """
+        with open(f"config/{filename}.yml", "r") as stream:
+            try:
+                dict_from_yml = yaml.safe_load(stream)
+            except yaml.YAMLError as exc:
+                print(exc)
+
+        self.asic_config = dict_from_yml[f'astropix{chipversion}']
+
     def gen_asic_vector(self, msbfirst: bool = False) -> BitArray:
         """Generate asic bitvector from digital, bias and dacconfig
 
@@ -196,22 +155,12 @@ class Asic(Nexysio):
 
         bitvector = BitArray()
 
-        for value in self.digitalconfig.values():
-            bitvector.append(self.__int2nbit(value, 1))
-
-        for value in self.biasconfig.values():
-            bitvector.append(self.__int2nbit(value, 1))
-
-        for value in self.dacs.values():
-            bitvector.append(self.__int2nbit(value, 6))
-
-        for value in self.recconfig.values():
-            bitvector.append(self.__int2nbit(value, 38))
+        for key in self.asic_config:
+            for values in self.asic_config[key].values():
+                bitvector.append(self.__int2nbit(values[1], values[0]))
 
         if not msbfirst:
             bitvector.reverse()
-
-        # print(f'Bitvector: {bitvector} \n')
 
         return bitvector
 

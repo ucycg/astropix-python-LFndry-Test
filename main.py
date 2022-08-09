@@ -35,6 +35,7 @@ def main():
 
     # Write to asicSR
     asic = Asic(handle)
+    asic.load_conf_from_yaml(2,"testconfig")
     asic.update_asic()
 
     # Example: Update Config Bit
@@ -91,8 +92,6 @@ def main():
     # Set SPI clockdivider
     # freq = 100 MHz/spi_clkdiv
     nexys.spi_clkdiv = 255
-
-    asic.dacs['vn1'] = 5
 
     # Generate bitvector for SPI ASIC config
     asic_bitvector = asic.gen_asic_vector()
