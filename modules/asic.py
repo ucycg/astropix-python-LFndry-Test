@@ -64,6 +64,7 @@ class Asic(Nexysio):
         for i in range(self.get_num_cols()):
             self.asic_config['recconfig'][f'col{i}'][1] = self.asic_config['recconfig'][f'col{i}'][1] & 0b011_11111_11111_11111_11111_11111_11111_11111
 
+
         self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'][f'col{col}'][1] | 0b100_00000_00000_00000_00000_00000_00000_00000
 
     def enable_pixel(self, col: int, row: int):
