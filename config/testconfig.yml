@@ -1,3 +1,17 @@
+# Example Astropix2 config
+#
+# The following yaml should comply to the floowing structure.
+# It is important, that the order of configbits under the config section, corresponds to the actual order in the chip
+#
+# astropix<version>:
+#   geometry:
+#       cols: <number of cols>
+#       rows: <number of rows>
+#   config:
+#       <group-name>:
+#           <configbit-name>: [<number of bits>, <value>]
+#   ...
+#
 ---
 astropix2:
     geometry:
