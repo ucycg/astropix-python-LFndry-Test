@@ -33,7 +33,7 @@ class Asic(Nexysio):
 
     @property
     def num_cols(self):
-        """Get number of columns
+        """Get/set number of columns
 
         :returns: Number of columns
         """
@@ -41,15 +41,11 @@ class Asic(Nexysio):
 
     @num_cols.setter
     def num_cols(self, cols):
-        """Get number of columns
-
-        :returns: Number of columns
-        """
         self._num_cols = cols
 
     @property
     def num_rows(self):
-        """Get number of rows
+        """Get/set number of rows
 
         :returns: Number of rows
         """
@@ -57,10 +53,6 @@ class Asic(Nexysio):
 
     @num_rows.setter
     def num_rows(self, rows):
-        """Get number of rows
-
-        :returns: Number of rows
-        """
         self._num_rows = rows
 
     def enable_inj_row(self, row: int):
@@ -68,7 +60,7 @@ class Asic(Nexysio):
 
         :param row: Row number
         """
-        if(row < self._num_rows):
+        if(row < self.num_rows):
             self.asic_config['recconfig'][f'col{row}'][1] = self.asic_config['recconfig'].get(f'col{row}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | 0b000_00000_00000_00000_00000_00000_00000_00001
 
     def enable_inj_col(self, col: int):
@@ -76,7 +68,7 @@ class Asic(Nexysio):
 
         :param col: Col number
         """
-        if(col < self._num_cols):
+        if(col < self.num_cols):
             self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | 0b010_00000_00000_00000_00000_00000_00000_00000
 
     def enable_ampout_col(self, col: int):
@@ -84,7 +76,7 @@ class Asic(Nexysio):
 
         :param col: Col number
         """
-        for i in range(self.num_cols()):
+        for i in range(self.num_cols):
             self.asic_config['recconfig'][f'col{i}'][1] = self.asic_config['recconfig'][f'col{i}'][1] & 0b011_11111_11111_11111_11111_11111_11111_11111
 
         self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'][f'col{col}'][1] | 0b100_00000_00000_00000_00000_00000_00000_00000
@@ -95,7 +87,7 @@ class Asic(Nexysio):
         :param col: Col number
         :param row: Row number
         """
-        if(row < self._num_rows and col < self._num_cols):
+        if(row < self.num_rows and col < self.num_cols):
             self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & ~(2 << row)
 
     def disable_pixel(self, col: int, row: int):
@@ -104,7 +96,7 @@ class Asic(Nexysio):
         :param col: Col number
         :param row: Row number
         """
-        if(row < self._num_rows and col < self._num_cols):
+        if(row < self.num_rows and col < self.num_cols):
             self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | (2 << row)
 
     def disable_inj_row(self, row: int):
@@ -112,7 +104,7 @@ class Asic(Nexysio):
 
         :param row: Row number
         """
-        if(row < self._num_rows):
+        if(row < self.num_rows):
             self.asic_config['recconfig'][f'col{row}'][1] = self.asic_config['recconfig'].get(f'col{row}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & 0b111_11111_11111_11111_11111_11111_11111_11110
 
     def disable_inj_col(self, col: int):
@@ -120,7 +112,7 @@ class Asic(Nexysio):
 
         :param col: Col number
         """
-        if(col < self._num_cols):
+        if(col < self.num_cols):
             self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & 0b101_11111_11111_11111_11111_11111_11111_11111
 
     def get_pixel(self, col: int, row: int):
@@ -129,7 +121,7 @@ class Asic(Nexysio):
         :param col: Col number
         :param row: Row number
         """
-        if(row < self._num_rows):
+        if(row < self.num_rows):
             if( self.asic_config['recconfig'].get(f'col{col}')[1] & (1<<(row+1))):
                 return False
             else:
@@ -168,7 +160,18 @@ class Asic(Nexysio):
             except yaml.YAMLError as exc:
                 logger.error(exc)
 
-        self.asic_config = dict_from_yml[f'astropix{chipversion}']
+        try:
+            self.asic_config = dict_from_yml.get(f'astropix{chipversion}')['config']
+            logger.info(f"Astropix{chipversion} config found!")
+        except:
+            logger.error(f"Astropix{chipversion} config not found")
+
+        try:
+            self.num_cols = dict_from_yml[f'astropix{chipversion}'].get('geometry')['cols']
+            self.num_rows = dict_from_yml[f'astropix{chipversion}'].get('geometry')['rows']
+            logger.info(f"Astropix{chipversion} matrix dimensions found!")
+        except:
+            logger.error(f"Astropix{chipversion} matrix dimensions not found!")
 
     def write_conf_to_yaml(self, chipversion: int, filename: str):
         """Write ASIC config to yaml
@@ -178,7 +181,13 @@ class Asic(Nexysio):
         """
         with open(f"config/{filename}.yml", "w") as stream:
             try:
-                yaml.dump({f"astropix{chipversion}": self.asic_config}, stream, default_flow_style=False, sort_keys=False)
+                yaml.dump({f"astropix{chipversion}": \
+                    {
+                        "geometry": {"cols": self.num_cols, "rows": self.num_rows},\
+                        "config" : self.asic_config}\
+                    },
+                    stream, default_flow_style=False, sort_keys=False)
+
             except yaml.YAMLError as exc:
                 logger.error(exc)
 

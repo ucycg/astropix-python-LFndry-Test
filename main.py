@@ -36,6 +36,9 @@ def main():
     # Write to asicSR
     asic = Asic(handle)
     asic.load_conf_from_yaml(2,"testconfig")
+    #asic.asic_config['idacs']['vncomp'] = 60
+    asic.write_conf_to_yaml(2,"testconfig_write")
+    asic.load_conf_from_yaml(2,"testconfig_write")
     asic.update_asic()
 
     # Example: Update Config Bit
