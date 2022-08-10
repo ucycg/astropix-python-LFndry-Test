@@ -8,11 +8,16 @@ Created on Fri Jun 25 16:28:27 2021
 Astropix2 Configbits
 """
 import yaml
+import logging
 
 from bitstring import BitArray
 from dataclasses import dataclass
 
 from modules.nexysio import Nexysio
+from modules.setup_logger import logger
+
+
+logger = logging.getLogger(__name__)
 
 class Asic(Nexysio):
     """Configure ASIC"""
@@ -26,19 +31,37 @@ class Asic(Nexysio):
 
         self.asic_config = None
 
-    def get_num_cols(self):
+    @property
+    def num_cols(self):
         """Get number of columns
 
         :returns: Number of columns
         """
         return self._num_cols
 
-    def get_num_rows(self):
+    @num_cols.setter
+    def num_cols(self, cols):
+        """Get number of columns
+
+        :returns: Number of columns
+        """
+        self._num_cols = cols
+
+    @property
+    def num_rows(self):
         """Get number of rows
 
         :returns: Number of rows
         """
         return self._num_rows
+
+    @num_rows.setter
+    def num_rows(self, rows):
+        """Get number of rows
+
+        :returns: Number of rows
+        """
+        self._num_rows = rows
 
     def enable_inj_row(self, row: int):
         """Enable Row injection switch
@@ -61,9 +84,8 @@ class Asic(Nexysio):
 
         :param col: Col number
         """
-        for i in range(self.get_num_cols()):
+        for i in range(self.num_cols()):
             self.asic_config['recconfig'][f'col{i}'][1] = self.asic_config['recconfig'][f'col{i}'][1] & 0b011_11111_11111_11111_11111_11111_11111_11111
-
 
         self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'][f'col{col}'][1] | 0b100_00000_00000_00000_00000_00000_00000_00000
 
@@ -144,9 +166,22 @@ class Asic(Nexysio):
             try:
                 dict_from_yml = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
-                print(exc)
+                logger.error(exc)
 
         self.asic_config = dict_from_yml[f'astropix{chipversion}']
+
+    def write_conf_to_yaml(self, chipversion: int, filename: str):
+        """Write ASIC config to yaml
+
+        :param chipversion: Name of yml file in config folder
+        :param filename: Name of yml file in config folder
+        """
+        with open(f"config/{filename}.yml", "w") as stream:
+            try:
+                yaml.dump({f"astropix{chipversion}": self.asic_config}, stream, default_flow_style=False, sort_keys=False)
+            except yaml.YAMLError as exc:
+                logger.error(exc)
+
 
     def gen_asic_vector(self, msbfirst: bool = False) -> BitArray:
         """Generate asic bitvector from digital, bias and dacconfig
