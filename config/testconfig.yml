@@ -1,6 +1,6 @@
 # Example Astropix2 config
 #
-# The following yaml should comply to the floowing structure.
+# The following yaml should comply to the structure below.
 # It is important, that the order of configbits under the config section, corresponds to the actual order in the chip
 #
 # astropix<version>:
@@ -20,8 +20,8 @@ astropix2:
     config:
         digitalconfig:
             interrupt_pushpull: [1, 0b1]
-            en_inj:             [20, 0b0]
-            reset:              [1, 0b1]
+            en_inj:             [18, 0b0]
+            reset:              [1, 0b0]
             extrabits:          [15, 0b0]
 
         biasconfig:
