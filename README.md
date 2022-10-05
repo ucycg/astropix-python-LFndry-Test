@@ -12,10 +12,11 @@ Features:
 * Configure Injectionboard
 * Read/Write single registers
 * SPI/QSPI Readout
+* Import/export chip config from/to yaml
 
-TODO:
-* Chip config JSON import
-* (GUI)
+Work in progress:
+* GUI
+* Scans
 
 ## Installation
 
