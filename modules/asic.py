@@ -5,13 +5,13 @@ Created on Fri Jun 25 16:28:27 2021
 
 @author: Nicolas Striebig
 
-Astropix2 Configbits
+Functions for ASIC configuration
 """
-import yaml
 import logging
+import yaml
+import sys
 
 from bitstring import BitArray
-from dataclasses import dataclass
 
 from modules.nexysio import Nexysio
 from modules.setup_logger import logger
@@ -31,7 +31,23 @@ class Asic(Nexysio):
         self._num_rows = 35
         self._num_cols = 35
 
-        self.asic_config = None
+        self.asic_config = {}
+
+        self._num_chips = 1
+
+        self._chipname = ""
+
+    @property
+    def chipname(self):
+        """Get/set chipname
+
+        :returns: chipname
+        """
+        return self._chipname
+
+    @chipname.setter
+    def chipname(self, chipname):
+        self._chipname = chipname
 
     @property
     def chipversion(self):
@@ -44,6 +60,14 @@ class Asic(Nexysio):
     @chipversion.setter
     def chipversion(self, chipversion):
         self._chipversion = chipversion
+
+    @property
+    def chip(self):
+        """Get/set chip+version
+
+        :returns: chipname
+        """
+        return self.chipname + str(self.chipversion)
 
     @property
     def num_cols(self):
@@ -69,12 +93,24 @@ class Asic(Nexysio):
     def num_rows(self, rows):
         self._num_rows = rows
 
+    @property
+    def num_chips(self):
+        """Get/set number of chips in telescope setup
+
+        :returns: Number of chips in telescope setup
+        """
+        return self._num_chips
+
+    @num_chips.setter
+    def num_chips(self, chips):
+        self._num_chips = chips
+
     def enable_inj_row(self, row: int):
         """Enable Row injection switch
 
         :param row: Row number
         """
-        if(row < self.num_rows):
+        if row < self.num_rows:
             self.asic_config['recconfig'][f'col{row}'][1] = self.asic_config['recconfig'].get(f'col{row}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | 0b000_00000_00000_00000_00000_00000_00000_00001
 
     def enable_inj_col(self, col: int):
@@ -82,7 +118,7 @@ class Asic(Nexysio):
 
         :param col: Col number
         """
-        if(col < self.num_cols):
+        if col < self.num_cols:
             self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] | 0b010_00000_00000_00000_00000_00000_00000_00000
 
     def enable_ampout_col(self, col: int):
@@ -118,7 +154,7 @@ class Asic(Nexysio):
 
         :param row: Row number
         """
-        if(row < self.num_rows):
+        if row < self.num_rows:
             self.asic_config['recconfig'][f'col{row}'][1] = self.asic_config['recconfig'].get(f'col{row}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & 0b111_11111_11111_11111_11111_11111_11111_11110
 
     def disable_inj_col(self, col: int):
@@ -126,7 +162,7 @@ class Asic(Nexysio):
 
         :param col: Col number
         """
-        if(col < self.num_cols):
+        if col < self.num_cols:
             self.asic_config['recconfig'][f'col{col}'][1] = self.asic_config['recconfig'].get(f'col{col}', 0b001_11111_11111_11111_11111_11111_11111_11110)[1] & 0b101_11111_11111_11111_11111_11111_11111_11111
 
     def get_pixel(self, col: int, row: int):
@@ -135,11 +171,14 @@ class Asic(Nexysio):
         :param col: Col number
         :param row: Row number
         """
-        if(row < self.num_rows):
-            if( self.asic_config['recconfig'].get(f'col{col}')[1] & (1<<(row+1))):
+        if row < self.num_rows:
+            if self.asic_config['recconfig'].get(f'col{col}')[1] & (1<<(row+1)):
                 return False
-            else:
-                return True
+
+            return True
+
+        logger.error("Invalid row %d larger than %d", row, self.num_rows)
+        return None
 
     def reset_recconfig(self):
         """Reset recconfig by disabling all pixels and disabling all injection switches and mux ouputs
@@ -160,49 +199,83 @@ class Asic(Nexysio):
         try:
             return BitArray(uint=value, length=nbits)
         except ValueError:
-            print(f'Allowed Values 0 - {2**nbits-1}')
+            logger.error('Allowed Values 0 - %d', 2**nbits-1)
+            return None
 
-    def load_conf_from_yaml(self, chipversion: int, filename: str):
+    def load_conf_from_yaml(self, chipversion: int, filename: str, **kwargs) -> None:
         """Load ASIC config from yaml
 
 
         :param filename: Name of yml file in config folder
         """
-        self.chipversion = chipversion
+        chipname = kwargs.get('chipname', 'astropix')
 
-        with open(f"config/{filename}.yml", "r") as stream:
+        self.chipversion = chipversion
+        self.chipname = chipname
+
+        with open(f"config/{filename}.yml", "r", encoding="utf-8") as stream:
             try:
                 dict_from_yml = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
                 logger.error(exc)
 
+        # Get Telescope settings
         try:
-            self.asic_config = dict_from_yml.get(f'astropix{chipversion}')['config']
-            logger.info(f"Astropix{chipversion} config found!")
-        except:
-            logger.error(f"Astropix{chipversion} config not found")
+            self.num_chips = dict_from_yml[self.chip].get('telescope')['nchips']
 
+            logger.info("%s%d Telescope setup with %d chips found!", chipname, chipversion, self.num_chips)
+        except (KeyError, TypeError):
+            logger.warning("%s%d Telescope config not found!", chipname, chipversion)
+
+        # Get chip geometry
         try:
-            self.num_cols = dict_from_yml[f'astropix{chipversion}'].get('geometry')['cols']
-            self.num_rows = dict_from_yml[f'astropix{chipversion}'].get('geometry')['rows']
-            logger.info(f"Astropix{chipversion} matrix dimensions found!")
-        except:
-            logger.error(f"Astropix{chipversion} matrix dimensions not found!")
+            self.num_cols = dict_from_yml[self.chip].get('geometry')['cols']
+            self.num_rows = dict_from_yml[self.chip].get('geometry')['rows']
 
-    def write_conf_to_yaml(self, chipversion: int, filename: str):
+            logger.info("%s%d matrix dimensions found!", chipname, chipversion)
+        except KeyError:
+            logger.error("%s%d matrix dimensions not found!", chipname, chipversion)
+            sys.exit(1)
+
+        # Get chip configs
+        if self.num_chips > 1:
+            for chip_number in range(self.num_chips):
+                try:
+                    self.asic_config[f'config_{chip_number}'] = dict_from_yml.get(self.chip)[f'config_{chip_number}']
+                    logger.info("Telescope chip_%d config found!", chip_number)
+                except KeyError:
+                    logger.error("Telescope chip_%d config not found!", chip_number)
+                    sys.exit(1)
+        else:
+            try:
+                self.asic_config = dict_from_yml.get(self.chip)['config']
+                logger.info("%s%d config found!", chipname, chipversion)
+            except KeyError:
+                logger.error("%s%d config not found!", chipname, chipversion)
+                sys.exit(1)
+
+    def write_conf_to_yaml(self, filename: str) -> None:
         """Write ASIC config to yaml
 
         :param chipversion: Name of yml file in config folder
         :param filename: Name of yml file in config folder
         """
-        with open(f"config/{filename}.yml", "w") as stream:
+        dicttofile ={self.chip:
+            {
+                "telescope": {"nchips": self.num_chips},
+                "geometry": {"cols": self.num_cols, "rows": self.num_rows}
+            }
+        }
+
+        if self.num_chips > 1:
+            for chip in range(self.num_chips):
+                dicttofile[self.chip][f'config_{chip}'] = self.asic_config[f'config_{chip}']
+        else:
+            dicttofile[self.chip]['config'] = self.asic_config
+
+        with open(f"config/{filename}.yml", "w", encoding="utf-8") as stream:
             try:
-                yaml.dump({f"astropix{chipversion}": \
-                    {
-                        "geometry": {"cols": self.num_cols, "rows": self.num_rows},\
-                        "config" : self.asic_config}\
-                    },
-                    stream, default_flow_style=False, sort_keys=False)
+                yaml.dump(dicttofile, stream, default_flow_style=False, sort_keys=False)
 
             except yaml.YAMLError as exc:
                 logger.error(exc)
@@ -216,12 +289,25 @@ class Asic(Nexysio):
 
         bitvector = BitArray()
 
-        for key in self.asic_config:
-            for values in self.asic_config[key].values():
-                bitvector.append(self.__int2nbit(values[1], values[0]))
+        if self.num_chips > 1:
+            for chip in range(self.num_chips-1, -1, -1):
 
-        if not msbfirst:
-            bitvector.reverse()
+                for key in self.asic_config[f'config_{chip}']:
+                    for values in self.asic_config[f'config_{chip}'][key].values():
+                        bitvector.append(self.__int2nbit(values[1], values[0]))
+
+                if not msbfirst:
+                    bitvector.reverse()
+
+                logger.info("Generated chip_%d config successfully!", chip)
+
+        else:
+            for key in self.asic_config:
+                for values in self.asic_config[key].values():
+                    bitvector.append(self.__int2nbit(values[1], values[0]))
+
+            if not msbfirst:
+                bitvector.reverse()
 
         return bitvector
 
@@ -234,7 +320,9 @@ class Asic(Nexysio):
 
         # Write config
         asicbits = self.gen_asic_pattern(self.gen_asic_vector(), True)
-        self.write(asicbits)
+
+        for value in asicbits:
+            self.write(value)
 
     def readback_asic(self):
         asicbits = self.gen_asic_pattern(self.gen_asic_vector(), True, readback_mode = True)
