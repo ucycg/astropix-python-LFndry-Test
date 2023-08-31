@@ -9,6 +9,8 @@ import logging
 from time import sleep
 from bitstring import BitArray
 
+import binascii
+
 from modules.setup_logger import logger
 
 
@@ -220,17 +222,18 @@ class Spi:
         """ Continous readout """
         pass
 
-    def read_spi_fifo(self) -> bytearray:
+    def read_spi_fifo(self, max_reads: int = 1) -> bytearray:
         """ Read Data from SPI FIFO until empty """
 
         read_stream = bytearray()
+        readcount = 0
 
-        while not self.get_spi_config() & 16:
-            readbuffer = self.read_spi(64)
-
+        while not (self.get_spi_config() & 16) and readcount < max_reads:
+            readbuffer = self.read_spi(1024)
             read_stream.extend(readbuffer)
-
-            sleep(0.01)
+            
+            readcount += 1    
+            
 
         return read_stream
 
@@ -243,8 +246,6 @@ class Spi:
             readbuffer = self.read_spi_readback(8)
 
             read_stream.extend(readbuffer)
-
-            sleep(0.01)
 
         return read_stream
 
@@ -294,14 +295,13 @@ class Spi:
         i = 0
         counter = buffersize / 3
 
-        # WrFIFO bit positons in spi_config register 0x21
+        # WrFIFO bit positions in spi_config register 0x21
         compare_empty = 2
         compare_full = 4
 
         # Check if WrFIFO is Empty
         while waiting:
 
-            # Convert Hex string to int
             result = self.get_spi_config()
 
             # Wait until WrFIFO empty
