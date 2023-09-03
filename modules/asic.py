@@ -304,7 +304,12 @@ class Asic(Nexysio):
         else:
             for key in self.asic_config:
                 for values in self.asic_config[key].values():
-                    bitvector.append(self.__int2nbit(values[1], values[0]))
+                    if(key=='vdacs'):
+                        bitvector2 =  BitArray(self.__int2nbit(values[1], values[0]))
+                        bitvector2.reverse()
+                        bitvector.append(bitvector2)
+                    else:
+                        bitvector.append(self.__int2nbit(values[1], values[0]))
 
             if not msbfirst:
                 bitvector.reverse()
