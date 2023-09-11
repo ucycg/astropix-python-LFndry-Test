@@ -79,7 +79,8 @@ class Spi:
     def get_sr_readback_config(self) -> int:
         return int.from_bytes(self.read_register(SPI_READBACK_REG_CONF), 'big')
 
-    def asic_spi_vector(self, value: bytearray, load: bool, n_load: int = 10, broadcast: bool = True, chipid: int = 0) -> bytearray:
+    def asic_spi_vector(self, value: bytearray, load: bool, n_load: int = 10,
+                        broadcast: bool = True, chipid: int = 0) -> bytearray:
         """
         Write ASIC config via SPI
 
@@ -150,6 +151,15 @@ class Spi:
         self.write_register(SPI_CONFIG_REG, configregister, True)
 
     def spi_reset(self) -> None:
+        """
+        OBSOLETE: Reset SPI
+
+        Resets SPI module and FIFOs
+        """
+        print("spi_reset() is obsolete, use spi_reset_fpga() instead")
+        self.spi_reset_fpga_readout()
+
+    def spi_reset_fpga_readout(self) -> None:
         """
         Reset SPI
 
@@ -256,7 +266,7 @@ class Spi:
         """
 
         if n_bytes > 64000:
-            #n_bytes = 64000
+            # n_bytes = 64000
             logger.warning("Cannot write more than 64000 Bytes")
 
         logger.info("SPI: Write %d Bytes", 8 * n_bytes + 4)
@@ -270,7 +280,8 @@ class Spi:
         logger.info("SPI: Send routing cmd")
         self.write_spi(bytearray([SPI_HEADER_EMPTY, 0, 0, 0, 0, 0, 0, 0]), False)
 
-    def write_spi(self, data: bytearray, MSBfirst: bool = True, buffersize: int = 1023) -> None:
+    def write_spi(self, data: bytearray, MSBfirst: bool = True,
+                  buffersize: int = 1023) -> None:
         """
         Write to Nexys SPI Write FIFO
 
