@@ -60,7 +60,7 @@ class Nexysio(Spi):
 
         return data
 
-    def debug_print(self, name: str, length: int, hbyte: int, lbyte: int, 
+    def debug_print(self, name: str, length: int, hbyte: int, lbyte: int,
                     header: bytearray, value: bytearray):
         logger.debug(
             "\nWrite %s\n===============================\
@@ -157,7 +157,7 @@ class Nexysio(Spi):
         """
         remaining = num
         bytes = bytearray()
-  
+
         try:
             while remaining > 0:
                 rbytes = self._handle.read(remaining)
@@ -294,8 +294,8 @@ class Nexysio(Spi):
         # concatenate header+dataasic
         return b''.join([header, data])
 
-    def gen_asic_pattern_part(self, value: bytearray, wload: bool, 
-                              clkdiv: int = 8, readback_mode = False) -> bytes:
+    def gen_asic_pattern_part(self, value: bytearray, wload: bool,
+                              clkdiv: int = 8, readback_mode=False) -> bytes:
         """
         Generate ASIC SR write pattern from bitvector
 
@@ -311,7 +311,7 @@ class Nexysio(Spi):
         if not readback_mode:
             length = (len(value) * 5 + 30) * clkdiv
         else:
-            length = ((len(value)+1) * 5) * clkdiv
+            length = ((len(value) + 1) * 5) * clkdiv
 
         logger.debug('Bytes to write: %d\n', length)
 
@@ -325,11 +325,11 @@ class Nexysio(Spi):
         data, load = bytearray(), bytearray()
 
         if not readback_mode:
-        # data
+            # data
             for bit in value:
                 pattern = SIN_ASIC if bit == 1 else 0
 
-                data.extend([pattern, pattern | 1, pattern, pattern | 2, pattern]) # Generate double clocked pattern
+                data.extend([pattern, pattern | 1, pattern, pattern | 2, pattern])  # Generate double clocked pattern
 
             # Load signal
             if wload:
@@ -339,17 +339,17 @@ class Nexysio(Spi):
             data.extend(self.__addbytes(load, clkdiv * 10))
 
         else:
-            data.extend([4 | 32, 4 | 33, 4|32, 4 | 34, 4|32])
+            data.extend([4 | 32, 4 | 33, 4 | 32, 4 | 34, 4 | 32])
             for bit in value:
-                #data.extend([4 | 32, 4 | 33, 4, 4 | 2, 4])
-                data.extend([4 , 4 | 1, 4, 4 | 2, 4])
+                # data.extend([4 | 32, 4 | 33, 4, 4 | 2, 4])
+                data.extend([4, 4 | 1, 4, 4 | 2, 4])
             data = self.__addbytes(data, clkdiv)
 
         # concatenate header+data
         return b''.join([header, data])
 
-    def gen_asic_pattern(self, value: bytearray, wload: bool, clkdiv: int = 8, 
-                         readback_mode = False) -> list:
+    def gen_asic_pattern(self, value: bytearray, wload: bool, clkdiv: int = 8,
+                         readback_mode=False) -> list:
         """
         Split asic data in parts
 
@@ -364,16 +364,16 @@ class Nexysio(Spi):
 
         if not readback_mode:
             logger.debug('Bytes to write: %d', (len(value) * 5 + 30) * clkdiv)
-            max_value = int((65534/clkdiv - 30)/5)
+            max_value = int((65534 / clkdiv - 30) / 5)
         else:
             logger.debug('Bytes to write: %d', ((len(value) + 1) * 5) * clkdiv)
-            max_value = int((65534/clkdiv)/5)-1
+            max_value = int((65534 / clkdiv) / 5) - 1
 
         length = len(value)
 
         while length >= max_value:
             data.append(self.gen_asic_pattern_part(value[:max_value], False, clkdiv, readback_mode))
-            value=value[max_value + 1:]
+            value = value[max_value + 1:]
             length -= max_value
         else:
             data.append(self.gen_asic_pattern_part(value, wload, clkdiv, readback_mode))

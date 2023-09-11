@@ -22,10 +22,11 @@ PG_DATA     = 7
 
 logger = logging.getLogger(__name__)
 
+
 class Injectionboard(Nexysio):
     """Sets injection setting for GECCO Injectionboard"""
 
-    def __init__(self, handle, pos: int = 0, onchip = False) -> None:
+    def __init__(self, handle, pos: int = 0, onchip=False) -> None:
         """Init
 
         :param handle: USB device handle
@@ -142,7 +143,6 @@ class Injectionboard(Nexysio):
     def vsupply(self, voltage: float) -> None:
         self._injvoltage.vsupply = voltage
 
-
     def __patgen(
             self, period: int,
             cycle: int,
@@ -209,7 +209,7 @@ class Injectionboard(Nexysio):
 
         logger.info("\nWrite Injection Config\n===============================")
 
-        if(self._onchip):
+        if self._onchip:
             output = self.write_register(PG_OUTPUT, 2)
         else:
             output = self.write_register(PG_OUTPUT, 1)
