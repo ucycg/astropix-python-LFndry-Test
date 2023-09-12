@@ -5,23 +5,22 @@ Created on Sat Jun 26 00:10:56 2021
 
 @author: Nicolas Striebig
 """
+import binascii
 
 from modules.asic import Asic
 from modules.injectionboard import Injectionboard
 from modules.nexysio import Nexysio
 from modules.voltageboard import Voltageboard
 from modules.decode import Decode
-
 from utils.utils import wait_progress
 
-import binascii
 
 def main():
 
     nexys = Nexysio()
 
     # Open FTDI Device with Index 0
-    #handle = nexys.open(0)
+    # handle = nexys.open(0)
     handle = nexys.autoopen()
 
     # Write and read directly to register
@@ -35,10 +34,14 @@ def main():
 
     # Write to asicSR
     asic = Asic(handle)
-    asic.load_conf_from_yaml(2,"testconfig")
-    #asic.asic_config['idacs']['vncomp'] = 60
-    asic.write_conf_to_yaml(2,"testconfig_write")
-    asic.load_conf_from_yaml(2,"testconfig_write")
+    asic.load_conf_from_yaml(3, "testconfig_v3")
+    # asic.asic_config['idacs']['vncomp'] = 60
+    asic.write_conf_to_yaml("testconfig_v3_write")
+    # asic.load_conf_from_yaml(2,"testconfig_write")
+    asic.enable_ampout_col(5)
+    asic.enable_inj_col(5)
+    asic.enable_inj_row(0)
+    asic.enable_pixel(5, 0)
     asic.update_asic()
 
     # Example: Update Config Bit
@@ -52,11 +55,11 @@ def main():
 
     # Configure 8 DAC Voltageboard in Slot 4 with list values
     # 3 = Vcasc2, 4=BL, 7=Vminuspix, 8=Thpix
-    vboard1 = Voltageboard(handle, 4, (8, [0, 0, 1.1, 1, 0, 0, 1, 1.1]))
+    vboard1 = Voltageboard(handle, 4, (8, [0, 0, 1.1, 1, 0, 0, 0.7, 1.05]))
 
     # Set measured 1V for one-point calibration
     vboard1.vcal = 0.989
-    vboard1.vsupply = 2.7
+    vboard1.vsupply = 2.8
 
     # Update voltageboards
     vboard1.update_vb()
@@ -69,13 +72,7 @@ def main():
     # Configure Injectionboard
     #
 
-    # Set Injection level
-    injvoltage = Voltageboard(handle, 3, (2, [0.3, 0.0]))
-    injvoltage.vcal = vboard1.vcal
-    injvoltage.vsupply = vboard1.vsupply
-    injvoltage.update_vb()
-
-    inj = Injectionboard(handle)
+    inj = Injectionboard(handle, 3)
 
     # Set Injection Params for 330MHz patgen clock
     inj.period = 100
@@ -83,6 +80,9 @@ def main():
     inj.initdelay = 10000
     inj.cycle = 0
     inj.pulsesperset = 1
+    inj.vcal = vboard1.vcal
+    inj.vsupply = vboard1.vsupply
+    inj.amplitude = 0.3
 
     #
     # SPI
@@ -97,8 +97,8 @@ def main():
     nexys.spi_clkdiv = 255
 
     # Generate bitvector for SPI ASIC config
-    asic_bitvector = asic.gen_asic_vector()
-    spi_data = nexys.asic_spi_vector(asic_bitvector, True, 10)
+    # asic_bitvector = asic.gen_asic_vector()
+    # spi_data = nexys.asic_spi_vector(asic_bitvector, True, 10)
 
     # Write Config via spi
     # nexys.write_spi(spi_data, False, 8191)
@@ -113,20 +113,17 @@ def main():
 
     wait_progress(3)
 
-    # Write 8*1000 Bytes to MOSI
-    nexys.write_spi_bytes(1000)
-
-    # Read (Width 8 Bytes) until read FIFO is empty
-    readout = nexys.read_spi_fifo()
+    # Read max. 10 times or until read FIFO is empty
+    readout = nexys.read_spi_fifo(10)
 
     print(binascii.hexlify(readout))
 
     decode = Decode()
     list_hits = decode.hits_from_readoutstream(readout)
 
-    decode.decode_astropix2_hits(list_hits)
+    print(decode.decode_astropix2_hits(list_hits))
 
-    # inj.stop()
+    inj.stop()
 
     # Close connection
     nexys.close()
