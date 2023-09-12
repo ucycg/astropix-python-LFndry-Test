@@ -79,7 +79,8 @@ class Scan(Asic, Nexysio):
                     injboard.update_inj_amplitude()
 
                     nexys.spi_reset()
-                    # nexys.chip_reset()
+                    if asic.chipversion == 2:
+                        nexys.chip_reset()
                     time.sleep(0.1)
 
                     hit_per_iter = np.zeros(counts)
@@ -140,12 +141,14 @@ class Scan(Asic, Nexysio):
         df.to_csv(file, mode='a')
 
     @staticmethod
-    def inj_scan_binsearch(asic, vboard, injboard, nexys, file, **kwargs):
+    def scan_binsearch(asic, vboard, inj, nexys, file, **kwargs):
 
+        scan_method = kwargs.get('scan_method', 'injection')
         noise_run = kwargs.get('noise_run', False)
         precision = kwargs.get('precision', 0.01)
-        vinj_start = kwargs.get('vinj_start', 0)
-        vinj_stop = kwargs.get('vinj_stop', 0.6)
+        v_start = kwargs.get('v_start', 0)
+        v_stop = kwargs.get('v_stop', 0.6)
+        vinj_thscan = kwargs.get('vinj_thscan', 0.3)
         counts = kwargs.get('counts', 5)
         vboard_Vth = kwargs.get('vth', 1.15)
         vboard_Vthpmos = kwargs.get('vthpmos', 1.15)
@@ -155,28 +158,35 @@ class Scan(Asic, Nexysio):
         set_col = kwargs.get('col')
         set_row = kwargs.get('row')
         inj_pulses = kwargs.get('inj_pulses', 100)
+        v_vdda = kwargs.get('v_vdda', 1.8)
+        v_vdd33 = kwargs.get('v_vdd33', 2.8)
 
-        injboard.pulsesperset = inj_pulses
-        injboard.cycle = 1
+        inj.pulsesperset = inj_pulses
+        inj.cycle = 1
+        inj.amplitude = vinj_thscan
 
         decode = Decode()
 
-        vboard.dacvalues = (8, [vboard_Vthpmos, 0, vboard_VCasc2, vboard_BL, 0, 0, vboard_Vminus, vboard_Vth])
-        vboard.update_vb()
+        if inj.onchip:
+            asic.set_internal_vdac('thpix', vboard_Vth, v_vdda)
+            asic.set_internal_vdac('thpmos', vboard_Vthpmos, v_vdda)
+            asic.set_internal_vdac('vinj', vinj_thscan, v_vdda)
+        else:
+            vboard.dacvalues = (8, [vboard_Vthpmos, 0, vboard_VCasc2, vboard_BL, 0, 0, vboard_Vminus, vboard_Vth])
+            vboard.vsupply = v_vdd33
+            vboard.update_vb()
 
         readout = bytearray()
 
-        df = pd.DataFrame(columns=['scan_col', 'scan_row', 'run', 'step', 'vinj',
+        df = pd.DataFrame(columns=['scan_col', 'scan_row', 'run', 'step', 'vinj', 'vth',
                                    'id', 'payload', 'location', 'col', 'timestamp', 'tot_total'])
 
         for col in tqdm(range(asic.num_cols), position=0, leave=False, desc='Column'):
-
-            if 'col' in kwargs and set_col != col:
+            if 'col' in kwargs and set_col != col and set_col is not None:
                 continue
 
             for row in tqdm(range(asic.num_rows), position=1, leave=False, desc='Row   '):
-
-                if 'row' in kwargs and set_row != row:
+                if 'row' in kwargs and set_row != row and set_row is not None:
                     continue
 
                 asic.reset_recconfig()
@@ -186,37 +196,59 @@ class Scan(Asic, Nexysio):
                     asic.set_inj_col(col, True)
 
                 asic.enable_ampout_col(col)  # enable ampout for current col
-
                 asic.set_pixel_comparator(col, row, True)
                 asic.update_asic()
 
                 step = 1
 
-                vinj_start_temp = vinj_start
-                vinj_stop_temp = vinj_stop
+                start_temp = v_start
+                stop_temp = v_stop
 
                 measure_at_zero = True
 
-                while (vinj_stop_temp - vinj_start_temp) >= precision:
+                while (stop_temp - start_temp) >= precision:
 
                     if measure_at_zero:
-                        vinj = 0.0
+                        if scan_method == 'injection':
+                            v_bin = 0.0  # Additional point at min
+                        elif scan_method == 'threshold':
+                            v_bin = v_stop  # Additional point at max
                     else:
-                        vinj = np.round((vinj_start_temp + vinj_stop_temp) / 2, 4)
-                    injboard.amplitude = vinj
-                    injboard.stop()
+                        v_bin = np.round((start_temp + stop_temp) / 2, 4)
 
-                    # nexys.chip_reset() Resets colconfig in V3
+                    if scan_method == 'injection':
+                        if inj.onchip:
+                            asic.set_internal_vdac('vinj', v_bin, v_vdda)
+                        else:
+                            inj.amplitude = v_bin
+                    elif scan_method == 'threshold':
+                        if inj.onchip:
+                            asic.set_internal_vdac('thpix', v_bin + vboard_BL, v_vdda)
+                            asic.set_internal_vdac('thpmos', v_bin + vboard_BL, v_vdda)
+                            asic.update()
+                        else:
+                            vboard.dacvalues = (8, [v_bin + vboard_BL,
+                                                    0,
+                                                    vboard_VCasc2,
+                                                    vboard_BL,
+                                                    0,
+                                                    0,
+                                                    vboard_Vminus,
+                                                    v_bin + vboard_BL])
+                            vboard.update_vb()
+
+                    inj.stop()
                     nexys.spi_reset_fpga_readout()
 
                     hit_per_iter = np.zeros(counts)
 
                     for count in tqdm(range(counts), position=2, leave=False, desc='Count '):
-                        tqdm.write(f"Pixel Col: {col} Row: {row} Vinj: {vinj} Run: {count}")
-                        logger.info("Pixel Col: %d Row: %d Vinj: %f Run: %d", col, row, vinj, count)
+                        tqdm.write(f"Pixel({col}, {row}) Vinj: {inj.amplitude} Vth: {vboard.dacvalues[7]} Run: {count}")
+                        logger.info("Pixel Col: %d Row: %d Vinj: %f Vth: %f Run: %d",
+                                    col, row, inj.amplitude, vboard.dacvalues[7], count)
 
                         if not noise_run:
-                            injboard.start()
+                            inj.start()
 
                         time.sleep(6)  # TODO: adapt to injection settings
 
@@ -228,8 +260,8 @@ class Scan(Asic, Nexysio):
                         list_hits = decode.hits_from_readoutstream(readout)
                         decoded = decode.decode_astropix2_hits(list_hits)
                         decoded = decoded.assign(scan_row=row, scan_col=col,
-                                                 run=count, step=step, vinj=injboard.amplitude)
-                        # print(decoded.to_string())
+                                                 run=count, step=step, vinj=inj.amplitude, vth=vboard.dacvalues[7])
+                        print(decoded.to_string())
 
                         df = pd.concat([df, decoded], axis=0, ignore_index=True)[df.columns]
 
@@ -245,10 +277,16 @@ class Scan(Asic, Nexysio):
 
                     # bin search
                     if not measure_at_zero:
-                        if mean_hits_per_iter / 2 < inj_pulses / 2:
-                            vinj_start_temp = vinj
-                        else:
-                            vinj_stop_temp = vinj
+                        if scan_method == 'injection':
+                            if mean_hits_per_iter / 2 < inj_pulses / 2:
+                                start_temp = v_bin
+                            else:
+                                stop_temp = v_bin
+                        elif scan_method == 'threshold':
+                            if mean_hits_per_iter / 2 > inj_pulses / 2:
+                                start_temp = v_bin
+                            else:
+                                stop_temp = v_bin
 
                     measure_at_zero = False
 
