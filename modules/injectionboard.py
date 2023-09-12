@@ -143,6 +143,11 @@ class Injectionboard(Nexysio):
     def vsupply(self, voltage: float) -> None:
         self._injvoltage.vsupply = voltage
 
+    @property
+    def onchip(self) -> float:
+        """Unses integrated VDAC"""
+        return self._onchip
+
     def __patgen(
             self, period: int,
             cycle: int,
