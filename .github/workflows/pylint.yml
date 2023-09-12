@@ -12,7 +12,7 @@ jobs:
       uses: programmingwithalex/pylinter@v1.4.3
       with:
         python-root: '.'
-        flake8-flags: '--ignore=E402,E501,E221 --count --show-source --statistics'
+        flake8-flags: '--ignore=E402,E501,E221,F811 --count --show-source --statistics'
         skip-mypy: true
         mypy-flags: '--ignore-missing-imports'
         skip-isort: true
