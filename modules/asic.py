@@ -223,6 +223,21 @@ class Asic(Nexysio):
         for key in self.asic_config['recconfig']:
             self.asic_config['recconfig'][key][1] = COLCONFIG_MASK_ALL
 
+    def set_internal_vdac(self, dac: str, voltage: float, vdda: float = 1.8, nbits: int = 10) -> None:
+        """Set integrated VDAC voltage
+
+        :param dac: Name of dac
+        :param voltage: Voltage from 0 to 1.8
+        :param vdd: Supply voltage VDDA
+        :param nbits: VDAC resolution
+        """
+        if dac in self.asic_config['vdacs'] and 0 <= voltage <= 1.8:
+            dacval = voltage * vdda / 2**nbits
+            self.asic_config['vdacs'][dac] = dacval
+            logger.debug('Set internal vdac: %s to %d V (dacval: %d)', dac, voltage, dacval)
+        else:
+            logger.warning('Can not set internal vdac: %s to %d V!', dac, voltage)
+
     @staticmethod
     def __int2nbit(value: int, nbits: int) -> BitArray:
         """Convert int to 6bit bitarray
