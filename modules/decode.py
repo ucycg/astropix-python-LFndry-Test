@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 
 class Decode:
-    def __init__(self, sampleclock_period_ns: int = 10, nchips: int = 1):
+    def __init__(self, sampleclock_period_ns: int = 5, nchips: int = 1, bytesperhit: int = 5):
         self._sampleclock_period_ns = sampleclock_period_ns
-        self._bytesperhit = 5
+        self._bytesperhit = bytesperhit
         self._idbits = 3
         self._nchips = nchips
 
@@ -39,6 +39,20 @@ class Decode:
 
             id_rev = int(f'{id:08b}'[::-1], 2)
             self._header_rev.add(id_rev)
+
+    def gray_to_dec(self, gray: int) -> int:
+        """
+        Decode Gray code to decimal
+
+        :param gray: Gray code
+
+        :returns: Decoded decimal
+        """
+        bits = gray >> 1
+        while bits:
+            gray ^= bits
+            bits >>= 1
+        return gray
 
     def reverse_bitorder(self, data: bytearray) -> bytearray:
         reversed_data = bytearray()
@@ -126,3 +140,38 @@ class Decode:
                 )
 
         return pd.DataFrame(hit_pd, columns=['id', 'payload', 'location', 'col', 'timestamp', 'tot_total'])
+
+    def decode_astropix4_hits(self, list_hits: list) -> pd.DataFrame:
+        """
+        Decode 8byte Frames from AstroPix 4
+
+        :param list_hists: List with all hits
+
+        :returns: Dataframe with decoded hits
+        """
+
+        hit_pd = []
+
+        for hit in list_hits:
+            if len(hit) == self._bytesperhit:
+                header, byte1, byte2, byte3, byte4, byte5, byte6, byte7 = hit
+
+                id          = header >> 3
+                payload     = header & 0b111
+                row         = byte1 >> 3
+                col         = ((byte1 & 0b111) << 2) + (byte2 >> 6)
+
+                tsneg1      = (byte2 >> 5) & 0b1
+                ts1         = ((byte2 & 0b11111) << 9) + (byte3 << 1) + (byte4 >> 7)
+                tsfine1     = (byte4 >> 4) & 0b111
+                tstdc1      = ((byte4 & 0b1111) << 1) + (byte5 >> 7)
+
+                tsneg2      = (byte5 >> 6) & 0b1
+                ts2         = ((byte5 & 0b111111) << 8) + byte6
+                tsfine2     = (byte7 >> 5) & 0b111
+                tstdc2      = byte7 & 0b11111
+
+                hit_pd.append([id, payload, row, col, ts1, tsfine1, ts2, tsfine2, tsneg1, tsneg2, tstdc1, tstdc2,
+                               self.gray_to_dec((ts1 << 3) + tsfine1), self.gray_to_dec((ts2 << 3) + tsfine2)])
+        return pd.DataFrame(hit_pd, columns=['id', 'payload', 'row', 'col', 'ts1', 'tsfine1', 'ts2',
+                                             'tsfine2', 'tsneg1', 'tsneg2', 'tstdc1', 'tstdc2', 'ts_dec1', 'ts_dec2'])
