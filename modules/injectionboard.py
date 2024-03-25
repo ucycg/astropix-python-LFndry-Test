@@ -129,7 +129,8 @@ class Injectionboard(Nexysio):
 
     @vcal.setter
     def vcal(self, voltage: float) -> None:
-        self._injvoltage.vcal = voltage
+        if not self._onchip:
+            self._injvoltage.vcal = voltage
 
     @property
     def vsupply(self) -> float:
@@ -141,7 +142,8 @@ class Injectionboard(Nexysio):
 
     @vsupply.setter
     def vsupply(self, voltage: float) -> None:
-        self._injvoltage.vsupply = voltage
+        if not self._onchip:
+            self._injvoltage.vsupply = voltage
 
     @property
     def onchip(self) -> float:
