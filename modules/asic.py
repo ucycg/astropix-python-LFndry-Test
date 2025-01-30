@@ -3,7 +3,7 @@
 """
 Created on Fri Jun 25 16:28:27 2021
 
-@author: Nicolas Striebig
+@author: Nicolas Striebig (Original Author), Justin Cott (Contributor)
 
 Functions for ASIC configuration
 """
@@ -38,7 +38,7 @@ class Asic(Nexysio):
         self.asic_config = {}
         self.asic_tdac_config = {}
 
-        self._num_chips = 1
+        self._num_chips = 1             # is this correct?
 
         self._chipname = ""
 
@@ -258,11 +258,12 @@ class Asic(Nexysio):
     def load_conf_from_yaml(self, chipversion: int, filename: str, **kwargs) -> None:
         """Load ASIC config from yaml
 
-        :param chipversion: Name of yml file in config folder
+        :param chipversion: Name of yml file in config folder     
         :param filename: Name of yml file in config folder
         :param chipname; Name of the chip i.e. astropix
         """
-        chipname = kwargs.get('chipname', 'astropix')
+        #DO I introduce a Bug, because my chipversion (1) is not part of yml file name?
+        chipname = kwargs.get('chipname', 'astropix_lf_test')
 
         self.chipversion = chipversion
         self.chipname = chipname
@@ -416,9 +417,10 @@ class Asic(Nexysio):
     def update_asic(self) -> None:
         """Update ASIC"""
 
-        if self.chipversion == 1:
-            dummybits = self.gen_asic_pattern(BitArray(uint=0, length=245), True)  # Not needed for v2
-            self.write(dummybits)
+        # THIS HAS NOTHING TO DO WITH JUSTINS ASTROPIX LF TST CHIP
+        #if self.chipversion == 1:
+        #    dummybits = self.gen_asic_pattern(BitArray(uint=0, length=245), True)  # Not needed for v2
+        #    self.write(dummybits)
 
         # Write config
         asicbits = self.gen_asic_pattern(self.gen_asic_vector(), True)

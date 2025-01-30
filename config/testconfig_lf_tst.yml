@@ -17,8 +17,8 @@ astropix4:
     general:
         sampleclockperiod_ns: 10
     geometry:
-        cols: 16
-        rows: 35
+        cols: 3
+        rows: 1
     configcards:
         voltagecard:
             pos: 4
@@ -114,46 +114,46 @@ astropix4:
         row11:              [80, 0b00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001]
         row12:              [80, 0b00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001_00001]
 
-    column_control:         # Test Chip with only 3 Pixels!
-        EnInj0: [1, 0]
-        RamWr0: [5, 0]
-        Amp0: [1, 0]
-        Inj0: [1, 0]
-        RamIn0: [1,0]
-        EnB_HBRec0: [1,0]
-        EnInj1: [1, 0]
-        RamWr1: [5, 0]
-        Amp1: [1, 0]
-        Inj1: [1, 0]
-        RamIn1: [1,0]
-        EnB_HBRec1: [1,0]
-        EnInj2: [1, 0]
-        RamWr2: [5, 0]
-        Amp2: [1, 0]
-        Inj2: [1, 0]
-        RamIn2: [1,0]
-        EnB_HBRec2: [1,0]
+    column_control:             # Test Chip with only 3 Pixels!
+        EnInj0:         [1, 0]
+        RamWr0:         [5, 0]
+        Amp0:           [1, 0]
+        Inj0:           [1, 0]
+        RamIn0:         [1,0]
+        EnB_HBRec0:     [1,0]
+        EnInj1:         [1, 0]
+        RamWr1:         [5, 0]
+        Amp1:           [1, 0]
+        Inj1:           [1, 0]
+        RamIn1:         [1,0]
+        EnB_HBRec1:     [1,0]
+        EnInj2:         [1, 0]
+        RamWr2:         [5, 0]
+        Amp2:           [1, 0]
+        Inj2:           [1, 0]
+        RamIn2:         [1,0]
+        EnB_HBRec2:     [1,0]
 
     bias_block:
-        idac15: [6,0]
-        idac14: [6,0]
-        idac13: [6,0]
-        idac12: [6,0]
-        idac8: [6,0]
-        idac11: [6,0]
-        idac10: [6,0]
-        VNBiasComp: [6,0]
-        VN: [6,0]
-        idac6: [6,0]
-        idac5: [6,0]
-        VNSF: [6,0]
-        idac3: [6,0]
-        idac2: [6,0]
-        VNBiasRec2: [6,0]
-        VNBiasRec: [6,0]
+        idac15:         [6,0]
+        idac14:         [6,0]
+        idac13:         [6,0]
+        idac12:         [6,0]
+        idac8:          [6,0]
+        idac11:         [6,0]
+        idac10:         [6,0]
+        VNBiasComp:     [6,0]
+        VN:             [6,0]
+        idac6:          [6,0]
+        idac5:          [6,0]
+        VNSF:           [6,0]
+        idac3:          [6,0]
+        idac2:          [6,0]
+        VNBiasRec2:     [6,0]
+        VNBiasRec:      [6,0]
     
     vdac_block:
-        BL: [8,0]           # VDAC has sign bit with bit 0! -127 to +127 range
-        Vth: [8,0]
-        Vcasc: [8,0]
+        BL:             [8,0]    # VDAC has sign bit with bit 0! -127 to +127 range
+        Vth:            [8,0]
+        Vcasc:          [8,0]
 

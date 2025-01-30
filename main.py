@@ -3,7 +3,7 @@
 """
 Created on Sat Jun 26 00:10:56 2021
 
-@author: Nicolas Striebig
+@author: Nicolas Striebig (Original Author), Justin Cott (Contributor)
 """
 import binascii
 
@@ -34,14 +34,16 @@ def main():
 
     # Write to asicSR
     asic = Asic(handle)
-    asic.load_conf_from_yaml(3, "testconfig_v3")
+    asic.load_conf_from_yaml(1, "testconfig_lf_test")
     # asic.asic_config['idacs']['vncomp'] = 60
     asic.write_conf_to_yaml("testconfig_v3_write")
     # asic.load_conf_from_yaml(2,"testconfig_write")
-    asic.enable_ampout_col(5)
-    asic.enable_inj_col(5)
+    #asic.enable_ampout_col(5)
+    #asic.enable_inj_col(5)
     asic.enable_inj_row(0)
-    asic.enable_pixel(5, 0)
+    asic.enable_pixel(0, 1)
+    asic.enable_pixel(0, 2)
+    asic.enable_pixel(0, 3)
     asic.update_asic()
 
     # Example: Update Config Bit
