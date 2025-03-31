@@ -66,10 +66,6 @@ Reload rules with:
 
 Create links to shared lib:
 
-## Example Usage
-
-### Upload the Firmware to FPGA Board
-
     sudo ldconfig
 
 ### Mac
