@@ -1,4 +1,4 @@
-# astropix-python
+# astropix-python-LFndry_Tst
 
 Python based lightweight cross-platform tool to control the GECCO System, based on [ATLASPix3_SoftAndFirmware](https://git.scc.kit.edu/jl1038/atlaspix3)
 
