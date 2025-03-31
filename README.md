@@ -70,3 +70,7 @@ Create links to shared lib:
 
 ### Mac
 See [FTDI Mac OS X Installation Guide](https://www.ftdichip.com/Support/Documents/InstallGuides/Mac_OS_X_Installation_Guide.pdf) D2XX Driver section from page 10.
+
+## Example Usage
+
+### Upload the Firmware to FPGA Board
