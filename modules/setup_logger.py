@@ -9,5 +9,5 @@ Created on Tue Dec 28 19:03:40 2021
 import logging
 
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

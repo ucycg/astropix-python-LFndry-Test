@@ -42,6 +42,8 @@ class Asic(Nexysio):
 
         self._chipname = ""
 
+        self._is_lf_tst_vers = True          # Temporary Cod Mod to avoid immediate deletion of code
+
     @property
     def chipname(self):
         """Get/set chipname
@@ -309,22 +311,23 @@ class Asic(Nexysio):
                 logger.error("%s%d config not found!", chipname, chipversion)
                 raise
 
-        # Get chip tdac configs
-        if self.num_chips > 1:
-            for chip_number in range(self.num_chips):
+        # Get chip tdac configs only IF chip is NOT LF Test Chip, dont know what TDAC is!
+        if not self._is_lf_tst_vers:
+            if self.num_chips > 1:
+                for chip_number in range(self.num_chips):
+                    try:
+                        self.asic_tdac_config[f'tdac_config_{chip_number}'] = dict_from_yml.get(self.chip)[f'tdac_config_{chip_number}']
+                        logger.info("Telescope chip_%d tdac config found!", chip_number)
+                    except KeyError:
+                        logger.error("Telescope chip_%d tdac config not found!", chip_number)
+                        raise
+            else:
                 try:
-                    self.asic_tdac_config[f'tdac_config_{chip_number}'] = dict_from_yml.get(self.chip)[f'tdac_config_{chip_number}']
-                    logger.info("Telescope chip_%d tdac config found!", chip_number)
+                    self.asic_tdac_config = dict_from_yml.get(self.chip)['tdac_config']
+                    logger.info("%s%d tdac config found!", chipname, chipversion)
                 except KeyError:
-                    logger.error("Telescope chip_%d tdac config not found!", chip_number)
+                    logger.error("%s%d tdac config not found!", chipname, chipversion)
                     raise
-        else:
-            try:
-                self.asic_tdac_config = dict_from_yml.get(self.chip)['tdac_config']
-                logger.info("%s%d tdac config found!", chipname, chipversion)
-            except KeyError:
-                logger.error("%s%d tdac config not found!", chipname, chipversion)
-                raise
 
     def write_conf_to_yaml(self, filename: str) -> None:
         """Write ASIC config to yaml
@@ -373,9 +376,10 @@ class Asic(Nexysio):
                 logger.info("Generated chip_%d config successfully!", chip)
 
         else:
+            logger.info("Start chip config generation!")
             for key in self.asic_config:
                 for values in self.asic_config[key].values():
-                    if key == 'vdacs':
+                    if key == 'vdac_block':          # What is different here?!
                         bitvector2 = BitArray(self.__int2nbit(values[1], values[0]))
                         bitvector2.reverse()
                         bitvector.append(bitvector2)
@@ -385,6 +389,7 @@ class Asic(Nexysio):
             if not msbfirst:
                 bitvector.reverse()
 
+            logger.warning("Generated chip config successfully!")
         return bitvector
 
     def gen_asic_row_vector(self, row: int, msbfirst: bool = False, ) -> BitArray:
@@ -427,6 +432,8 @@ class Asic(Nexysio):
 
         for value in asicbits:
             self.write(value)
+
+        logger.warning("ASIC update complete!")
 
     def update_asic_tdacrow(self, row: int) -> None:
         """Write ASIC TDAC ROW

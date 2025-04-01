@@ -28,23 +28,40 @@ def main():
     nexys.write_register(0x09, 0x55, True)
     nexys.read_register(0x09)
 
+    # First Select Bottom Chip of Lfoundry astropix Double Testchip for config. 
+    nexys.write_register(0x34, 0x00, True)  # flip demux to Top Chip
+    nexys.read_register(0x34)
+
     #
     # Configure ASIC
     #
 
     # Write to asicSR
     asic = Asic(handle)
-    asic.load_conf_from_yaml(1, "testconfig_lf_test")
+    asic.load_conf_from_yaml(1, "testconfig_lf_tst")
+    
     # asic.asic_config['idacs']['vncomp'] = 60
-    asic.write_conf_to_yaml("testconfig_v3_write")
+    # asic.write_conf_to_yaml("testconfig_v3_write")  NO LETS NOT OVERWRITE JUSTIN
     # asic.load_conf_from_yaml(2,"testconfig_write")
     #asic.enable_ampout_col(5)
     #asic.enable_inj_col(5)
-    asic.enable_inj_row(0)
-    asic.enable_pixel(0, 1)
-    asic.enable_pixel(0, 2)
-    asic.enable_pixel(0, 3)
+            #TALK WITH NICOLAS!!! WHAT NEEDS TO HAPPEN HERE!
+    #asic.enable_inj_row(0)
+    #asic.enable_pixel(0, 1)
+    #asic.enable_pixel(0, 2)
+    #asic.enable_pixel(0, 3)
     asic.update_asic()
+
+    #Second HOPEFULLY SWITCH TO TOP CHIP WITH INTERNAL FPGA DEMUX
+
+    nexys.read_register(0x34)
+    #nexys.write_register(0x34, 0x01, True)  # flip demux to Top Chip
+    #nexys.read_register(0x34)
+    #asic.update_asic()
+
+    # now its necessary to switch the hardware connection of the FPGA
+
+    #asic.readback_asic() # JUSTIN TRYS TO UNDESTAND CODE --> GETS ME TOO MUCH OUTPUT
 
     # Example: Update Config Bit
     # asic.digitalconfig['En_Inj17'] = 1
@@ -56,12 +73,13 @@ def main():
     #
 
     # Configure 8 DAC Voltageboard in Slot 4 with list values
-    # 3 = Vcasc2, 4=BL, 7=Vminuspix, 8=Thpix
-    vboard1 = Voltageboard(handle, 4, (8, [0, 0, 1.1, 1, 0, 0, 0.7, 1.05]))
+    # 5 = Vcasc, 6=VPBias, 7=VTh, 8=BL
+    #vboard1 = Voltageboard(handle, 4, (8, [0, 0, 0, 0, 1.1, 1.2, 1.1, 1.0]))
+    vboard1 = Voltageboard(handle, 4, (8, [0, 0, 0, 0, 0, 0, 0, 0]))
 
     # Set measured 1V for one-point calibration
     vboard1.vcal = 0.989
-    vboard1.vsupply = 2.8
+    vboard1.vsupply = 2.77
 
     # Update voltageboards
     vboard1.update_vb()
@@ -77,14 +95,14 @@ def main():
     inj = Injectionboard(handle, 3)
 
     # Set Injection Params for 330MHz patgen clock
-    inj.period = 100
-    inj.clkdiv = 4000
-    inj.initdelay = 10000
+    inj.period = 100                        # Time Unit in ms
+    inj.clkdiv = 400   
+    inj.initdelay = 10000                   
     inj.cycle = 0
-    inj.pulsesperset = 1
+    inj.pulsesperset = 1                    # i.e. set this to 1 gives 2 pulses total
     inj.vcal = vboard1.vcal
     inj.vsupply = vboard1.vsupply
-    inj.amplitude = 0.3
+    inj.amplitude = 0.4                      #Unit Volt!
 
     #
     # SPI
@@ -125,9 +143,10 @@ def main():
 
     print(decode.decode_astropix2_hits(list_hits))
 
-    inj.stop()
+    #inj.stop()
 
     # Close connection
+    
     nexys.close()
 
 
